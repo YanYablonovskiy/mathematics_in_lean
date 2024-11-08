@@ -5,25 +5,54 @@ example (a b c : ℝ) : a * b * c = b * (a * c) := by
   rw [mul_comm a b]
   rw [mul_assoc b a c]
 
--- Try these.
-example (a b c : ℝ) : c * b * a = b * (a * c) := by
+
+
+
+
+theorem test (a b c: ℕ+) : a * b * c = b * (a * c) :=
+  have hc: a*b*c = b*a*c := mul_right_cancel_iff.mpr (mul_comm a b)
   sorry
 
+variable (m n k: ℕ+)
+variable (a b c: ℝ)
+#check mul_right_cancel_iff.mpr
+-- mul_right_cancel_iff.mpr : ?m.1063 = ?m.1064 → ?m.1063 * ?m.1062 = ?m.1064 * ?m.1062
+#check mul_right_cancel_iff.mpr (mul_comm m n)
+#check mul_right_cancel_iff.mpr
+--#check mul_right_cancel_iff.mpr (mul_comm a b)
+#check mul_comm m (n*k)
+#check mul_assoc
+
+-- Try these.
+example (a b c : ℝ) : c * b * a = b * (a * c) := by
+  rw [mul_assoc c b a]
+  rw [mul_comm c (b*a)]
+  rw [mul_assoc b a c]
+
 example (a b c : ℝ) : a * (b * c) = b * (a * c) := by
-  sorry
+  rw [←mul_assoc a b c]
+  rw [mul_comm a b]
+  rw [mul_assoc b a c]
+
 
 -- An example.
 example (a b c : ℝ) : a * b * c = b * c * a := by
   rw [mul_assoc]
   rw [mul_comm]
 
+
+
+
 /- Try doing the first of these without providing any arguments at all,
    and the second with only one argument. -/
 example (a b c : ℝ) : a * (b * c) = b * (c * a) := by
-  sorry
+  rw [mul_comm]
+  rw [mul_assoc]
 
 example (a b c : ℝ) : a * (b * c) = b * (a * c) := by
-  sorry
+  rw [←mul_assoc]
+  rw [mul_comm a b]
+  rw [mul_assoc]
 
 -- Using facts from the local context.
 example (a b c d e f : ℝ) (h : a * b = c * d) (h' : e = f) : a * (b * e) = c * (d * f) := by
