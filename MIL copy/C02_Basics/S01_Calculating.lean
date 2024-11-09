@@ -51,24 +51,44 @@ example (a b c : ℝ) : a * (b * c) = b * (c * a) := by
 
 example (a b c : ℝ) : a * (b * c) = b * (a * c) := by
   rw [←mul_assoc]
-  rw [mul_comm a b]
+  rw [mul_comm a ] -- just one argument, matching first pattern.
   rw [mul_assoc]
 
 -- Using facts from the local context.
+--v1
 example (a b c d e f : ℝ) (h : a * b = c * d) (h' : e = f) : a * (b * e) = c * (d * f) := by
   rw [h']
   rw [← mul_assoc]
   rw [h]
   rw [mul_assoc]
 
+--v2
+example (a b c d e f : ℝ) (h : a * b = c * d) (h' : e = f) : a * (b * e) = c * (d * f) := by
+  rw [← mul_assoc]
+  rw [h]
+  rw [mul_assoc]
+  rw [h']
+
+
+
+
 example (a b c d e f : ℝ) (h : b * c = e * f) : a * b * c * d = a * e * f * d := by
-  sorry
+  rw [mul_assoc a b c]
+  rw [h]
+  rw [← mul_assoc]
+
 
 example (a b c d : ℝ) (hyp : c = b * a - d) (hyp' : d = a * b) : c = 0 := by
-  sorry
+  rw [hyp,hyp',mul_comm,sub_self]
 
+--v1
 example (a b c d e f : ℝ) (h : a * b = c * d) (h' : e = f) : a * (b * e) = c * (d * f) := by
   rw [h', ← mul_assoc, h, mul_assoc]
+
+--v2
+example (a b c d e f : ℝ) (h : a * b = c * d) (h' : e = f) : a * (b * e) = c * (d * f) := by
+  rw [← mul_assoc, h', h,mul_assoc]
+
 
 section
 
@@ -90,6 +110,9 @@ variable (a b c : ℝ)
 #check mul_assoc c a b
 #check mul_comm a
 #check mul_comm
+#check mul_assoc a
+#synth LinearOrder Nat
+
 
 end
 
@@ -113,32 +136,74 @@ example : (a + b) * (a + b) = a * a + 2 * (a * b) + b * b :=
 example : (a + b) * (a + b) = a * a + 2 * (a * b) + b * b :=
   calc
     (a + b) * (a + b) = a * a + b * a + (a * b + b * b) := by
-      sorry
+      rw [mul_add,add_mul,add_mul]
     _ = a * a + (b * a + a * b) + b * b := by
-      sorry
+      rw [ ← add_assoc, add_assoc (a * a) (b * a) (a * b)]
     _ = a * a + 2 * (a * b) + b * b := by
-      sorry
+      rw [mul_comm a b,← two_mul]
 
 end
 
 -- Try these. For the second, use the theorems listed underneath.
 section
 variable (a b c d : ℝ)
-
+variable (p₂:b*a  = b*a)
+ --v1
 example : (a + b) * (c + d) = a * c + a * d + b * c + b * d := by
-  sorry
+  rw [mul_add,add_mul,add_mul,← add_assoc,add_assoc (a * c) (b * c),add_comm (b * c),← add_assoc]
 
+--v2
+example : (a + b) * (c + d) = a * c + a * d + b * c + b * d :=
+calc
+  (a + b) * (c + d) = (a + b) * c + (a + b)*d := by rw [left_distrib]
+  _ = a*c + b*c + (a + b)*d := by rw [right_distrib]
+  _ = a*c + b*c + (a*d + b*d) := by rw [right_distrib]
+  _ = a*c + b*c + a*d + b*d := by rw [← add_assoc]
+  _ = a*c + (b*c + a*d) + b*d := by rw [add_assoc (a*c)]
+  _ = a*c + (a*d + b*c) + b*d := by rw [add_comm (a*d)]
+  _ = a*c + a*d + b*c + b*d := by rw [← add_assoc]
+
+
+--v1 via apply?
 example (a b : ℝ) : (a + b) * (a - b) = a ^ 2 - b ^ 2 := by
-  sorry
+  exact Eq.symm (sq_sub_sq a b)
 
+--v2 made up improv
+example (a b : ℝ) : (a + b) * (a - b) = a ^ 2 - b ^ 2 := by
+  rw [right_distrib,sub_eq_add_neg,left_distrib,left_distrib,← add_assoc,mul_neg,mul_comm a b,add_assoc (a*a),add_comm (-(b*a)),← sub_eq_add_neg,sub_eq_zero.mpr,add_zero,mul_neg,← sub_eq_add_neg,← pow_two, ← pow_two]
+  simp
+
+--v3 neater no calc
+example (a b : ℝ) : (a + b) * (a - b) = a ^ 2 - b ^ 2 := by
+rw [right_distrib,mul_sub_left_distrib,mul_sub_left_distrib]
+rw [sub_eq_add_neg,sub_eq_add_neg,← add_assoc]
+rw [mul_comm a b,← sub_eq_add_neg]
+rw [add_assoc (a*a), add_comm (-(b * a)),← sub_eq_add_neg]
+rw [←pow_two,←pow_two]
+rw [sub_self,add_zero]
+
+
+
+def p₁: Prop := ((b*a) = (b*a))
+variable (p₂:b*a  = b*a)
+#check b*a  = b*a
+#check p₁ a b
 #check pow_two a
 #check mul_sub a b c
 #check add_mul a b c
 #check add_sub a b c
 #check sub_sub a b c
 #check add_zero a
+--
+#check sub_eq_add_neg
+#check mul_neg
+#check sub_eq_zero
+#check sub_eq_zero.mpr p₂
+#check sub_zero
+
 
 end
+
 
 -- Examples.
 
