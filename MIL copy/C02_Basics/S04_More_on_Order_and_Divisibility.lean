@@ -155,5 +155,24 @@ variable (m n : ℕ)
 #check (Nat.lcm_zero_left n : Nat.lcm 0 n = 0)
 
 example : Nat.gcd m n = Nat.gcd n m := by
-  sorry
+ apply dvd_antisymm
+ . have h1: m.gcd n ∣ m ∧ n.gcd m ∣ n := And.intro ((Nat.gcd_dvd m n).1) ((Nat.gcd_dvd n m).1)
+   admit
+admit
+
+
+
+
+
+#check (Nat.gcd_dvd m n).1
+#check (Nat.gcd_dvd n m).1
+
+
 end
+
+#check gcd
+#check Nat.gcd_gcd_self_left_left
+#check Nat.gcd_dvd
+#check Nat.gcd_dvd_gcd_of_dvd_right
+#check Nat.gcd_le_left
+#check Nat.gcd_zero_left
