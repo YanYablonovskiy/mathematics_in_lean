@@ -1,4 +1,5 @@
-import MIL.Common
+import Mathlib.Tactic
+import Mathlib.Util.Delaborators
 import Mathlib.Topology.MetricSpace.Basic
 
 section
@@ -8,9 +9,11 @@ variable (x y z : α)
 #check x ≤ y
 #check (le_refl x : x ≤ x)
 #check (le_trans : x ≤ y → y ≤ z → x ≤ z)
+#check (le_antisymm : x ≤ y → y ≤ x → x = y)
+
 
 #check x < y
-#check (lt_irrefl x : ¬x < x)
+#check (lt_irrefl x : ¬ (x < x))
 #check (lt_trans : x < y → y < z → x < z)
 #check (lt_of_le_of_lt : x ≤ y → y < z → x < z)
 #check (lt_of_lt_of_le : x < y → y ≤ z → x < z)
@@ -34,7 +37,19 @@ variable (x y z : α)
 #check (sup_le : x ≤ z → y ≤ z → x ⊔ y ≤ z)
 
 example : x ⊓ y = y ⊓ x := by
-  sorry
+  apply le_antisymm
+  . apply le_inf (a:= x ⊓ y)
+    . exact inf_le_right
+    . exact inf_le_left
+  . apply le_inf (a:= y ⊓ x)
+    . exact inf_le_right
+    . exact inf_le_left
+
+--one line
+example : x ⊓ y = y ⊓ x := by
+  apply le_antisymm
+  repeat (first|apply le_inf (a:= _ ⊓ _)|exact inf_le_right|exact inf_le_left)
+
 
 example : x ⊓ y ⊓ z = x ⊓ (y ⊓ z) := by
   sorry
@@ -57,10 +72,10 @@ section
 variable {α : Type*} [DistribLattice α]
 variable (x y z : α)
 
-#check (inf_sup_left : x ⊓ (y ⊔ z) = x ⊓ y ⊔ x ⊓ z)
-#check (inf_sup_right : (x ⊔ y) ⊓ z = x ⊓ z ⊔ y ⊓ z)
-#check (sup_inf_left : x ⊔ y ⊓ z = (x ⊔ y) ⊓ (x ⊔ z))
-#check (sup_inf_right : x ⊓ y ⊔ z = (x ⊔ z) ⊓ (y ⊔ z))
+#check (inf_sup_left x y z : x ⊓ (y ⊔ z) = x ⊓ y ⊔ x ⊓ z)
+#check (inf_sup_right x y z : (x ⊔ y) ⊓ z = x ⊓ z ⊔ y ⊓ z)
+#check (sup_inf_left x y z : x ⊔ y ⊓ z = (x ⊔ y) ⊓ (x ⊔ z))
+#check (sup_inf_right x y z : x ⊓ y ⊔ z = (x ⊔ z) ⊓ (y ⊔ z))
 end
 
 section
@@ -107,4 +122,3 @@ example (x y : X) : 0 ≤ dist x y := by
   sorry
 
 end
-
