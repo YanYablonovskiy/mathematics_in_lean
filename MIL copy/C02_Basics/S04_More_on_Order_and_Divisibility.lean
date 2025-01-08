@@ -69,13 +69,13 @@ example : min (min a b) c = min a (min b c) := by
   rw [min_comm a (min b c)];
   cases min_cases (min b c) a
   . case inl h => rw [h.1]; apply (min_le_iff.mp h.2).elim; intro hp; rw [min_eq_right hp];intro hp;admit
-
+  admit
 
 
 #check min_le_left  (b + c) (a + c)
 #check min_eq_left
 #check min_eq_right
-#check min_le_iff.mp (k:min b c ≤ a)
+
 
 
 theorem aux : min a b + c ≤ min (a + c) (b + c) := by
@@ -158,7 +158,7 @@ example : Nat.gcd m n = Nat.gcd n m := by
  apply dvd_antisymm
  . have h1: m.gcd n ∣ m ∧ n.gcd m ∣ n := And.intro ((Nat.gcd_dvd m n).1) ((Nat.gcd_dvd n m).1)
    admit
-admit
+ . admit
 
 
 
