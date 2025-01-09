@@ -24,6 +24,7 @@ example : x < y ↔ x ≤ y ∧ x ≠ y :=
 end
 
 section
+
 variable {α : Type*} [Lattice α]
 variable (x y z : α)
 
@@ -51,20 +52,69 @@ example : x ⊓ y = y ⊓ x := by
   repeat (first|apply le_inf (a:= _ ⊓ _)|exact inf_le_right|exact inf_le_left)
 
 
-example : x ⊓ y ⊓ z = x ⊓ (y ⊓ z) := by
-  sorry
+example : (x ⊓ y) ⊓ z = x ⊓ (y ⊓ z) := by
+  apply le_antisymm
+  . case a _ =>
+      have h1: (x ⊓ y) ⊓ z ≤ x :=
+       le_trans (inf_le_left) (inf_le_left)
+      have h2: (x ⊓ y) ⊓ z ≤ y ⊓ z :=
+       have h21: (x ⊓ y) ⊓ z ≤ y := le_trans (inf_le_left) (inf_le_right)
+       have h22: (x ⊓ y) ⊓ z ≤ z := inf_le_right
+       le_inf h21 h22
+      exact le_inf h1 h2
+  . case a _ =>
+     have h3: x ⊓ (y ⊓ z) ≤ x ⊓ y :=
+      have h31: x ⊓ (y ⊓ z) ≤ x := inf_le_left
+      have h32: x ⊓ (y ⊓ z) ≤ y := le_trans (inf_le_right) (inf_le_left)
+      le_inf h31 h32
+     have h4: x ⊓ (y ⊓ z) ≤ z := le_trans (inf_le_right) (inf_le_right)
+     exact le_inf h3 h4
+
+
+#check le_inf
+#check le_sup_iff --∀ {α : Type u} [inst : LinearOrder α] {a b c : α}, a ≤ b ⊔ c ↔ a ≤ b ∨ a ≤ c
+#check sup_le_iff.mp
+#check sup_le
+#check le_sup_right
+
+
 
 example : x ⊔ y = y ⊔ x := by
-  sorry
+  apply le_antisymm
+  . exact sup_le (le_sup_right) (le_sup_left)
+  . exact sup_le (le_sup_right) (le_sup_left)
+
+
+
 
 example : x ⊔ y ⊔ z = x ⊔ (y ⊔ z) := by
-  sorry
+  apply le_antisymm
+  . case a _ =>
+     have h3: x ⊔ (y ⊔ z) ≥ x ⊔ y :=
+      have h31: x ⊔ (y ⊔ z) ≥  x := le_sup_left
+      have h32: x ⊔ (y ⊔ z) ≥ y := le_trans (le_sup_left) (le_sup_right)
+      sup_le h31 h32
+     have h4: x ⊔ (y ⊔ z) ≥ z := le_trans (le_sup_right) (le_sup_right)
+     exact sup_le h3 h4
+  . case a _ =>
+      have h1: (x ⊔ y) ⊔ z ≥ x :=
+       le_trans (le_sup_left) (le_sup_left)
+      have h2: (x ⊔ y) ⊔ z ≥ y ⊔ z :=
+       have h21: (x ⊔ y) ⊔ z ≥ y := le_trans (le_sup_right (b:=y)) (le_sup_left (b:=z))
+       have h22: (x ⊔ y) ⊔ z ≥ z := le_sup_right
+       sup_le h21 h22
+      exact sup_le (c:= (x ⊔ y) ⊔ z) h1 h2
 
 theorem absorb1 : x ⊓ (x ⊔ y) = x := by
-  sorry
+  apply le_antisymm
+  . exact inf_le_left
+  . exact le_inf (le_refl x) (le_sup_left)   --b is x, c is x ⊔ y, a is x
+
 
 theorem absorb2 : x ⊔ x ⊓ y = x := by
-  sorry
+  apply le_antisymm
+  . exact sup_le (le_refl x) (inf_le_left)
+  . exact le_sup_left
 
 end
 
