@@ -182,11 +182,26 @@ variable (x y z : X)
 #check (dist_comm x y : dist x y = dist y x)
 #check (dist_triangle x y z : dist x z ≤ dist x y + dist y z)
 
+
+--long version
+example (x y : X) : 0 ≤ dist x y := by
+  have h1:_ := dist_triangle x y x
+  rw [dist_self,dist_comm y] at h1
+  have h2: dist x y + dist x y = dist x y*(1+1) := by rw [mul_add_one (b:=1) (dist x y),mul_one]
+  rw [h2] at h1
+  exact nonneg_of_mul_nonneg_left h1 (add_pos (one_pos) (one_pos))
+
+
+--short version
 example (x y : X) : 0 ≤ dist x y := by
   have h1:_ := dist_triangle x y x
   rw [dist_self,dist_comm y] at h1
   linarith
 
 
+#check nonneg_of_mul_nonneg_left
+#check mul_add_one
+#check one_pos
+#check add_pos (one_pos) (one_pos)
 
 end
