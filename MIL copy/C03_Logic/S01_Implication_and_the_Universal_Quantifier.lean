@@ -1,4 +1,5 @@
-import MIL.Common
+import Mathlib.Tactic
+import Mathlib.Util.Delaborators
 import Mathlib.Data.Real.Basic
 
 namespace C03S01
@@ -7,8 +8,16 @@ namespace C03S01
 
 #check ∀ x y ε : ℝ, 0 < ε → ε ≤ 1 → |x| < ε → |y| < ε → |x * y| < ε
 
-theorem my_lemma : ∀ x y ε : ℝ, 0 < ε → ε ≤ 1 → |x| < ε → |y| < ε → |x * y| < ε :=
-  sorry
+#check lt_of_lt_of_le
+-- {a b c : α} (hab : a < b) (hbc : b ≤ c) : a < c
+
+
+theorem my_lemma : ∀ x y ε : ℝ, 0 < ε → ε ≤ 1 → |x| < ε → |y| < ε → |x * y| < ε := by
+intro x y e h1 h2 h3 h4
+have hl1: |x| < 1 := (@lt_of_lt_of_le ℝ _ |x| e 1 h3 h2)
+have h12: |y| < 1 := (@lt_of_lt_of_le ℝ _ |y| e 1 h4 h2)
+admit
+
 
 section
 variable (a b δ : ℝ)
@@ -38,14 +47,27 @@ theorem my_lemma3 :
   intro x y ε epos ele1 xlt ylt
   sorry
 
+
+
+#check mul_lt_mul_right
+#check mul_le_mul
+#check abs_nonneg
+#check le_of_lt
+#check lt_of_lt_of_le
+#check one_pos
+#check mul_lt_mul
+
+
 theorem my_lemma4 :
     ∀ {x y ε : ℝ}, 0 < ε → ε ≤ 1 → |x| < ε → |y| < ε → |x * y| < ε := by
   intro x y ε epos ele1 xlt ylt
   calc
-    |x * y| = |x| * |y| := sorry
-    _ ≤ |x| * ε := sorry
-    _ < 1 * ε := sorry
-    _ = ε := sorry
+    |x * y| = |x| * |y| := abs_mul _ _
+    _ ≤ |x| * ε := mul_le_mul (le_refl |x|) (le_of_lt ylt) (abs_nonneg y) (abs_nonneg x)
+    _ < 1 * ε := mul_lt_mul (lt_of_lt_of_le xlt ele1) (le_refl ε) epos (le_of_lt one_pos)
+    _ = ε := one_mul _
+
+
 
 def FnUb (f : ℝ → ℝ) (a : ℝ) : Prop :=
   ∀ x, f x ≤ a
