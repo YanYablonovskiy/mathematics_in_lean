@@ -135,6 +135,7 @@ variable (a b c : α)
 example (h : ∀ x y z : α, x ⊓ (y ⊔ z) = x ⊓ y ⊔ x ⊓ z) : a ⊔ b ⊓ c = (a ⊔ b) ⊓ (a ⊔ c) := by
   sorry
 
+
 example (h : ∀ x y z : α, x ⊔ y ⊓ z = (x ⊔ y) ⊓ (x ⊔ z)) : a ⊓ (b ⊔ c) = a ⊓ b ⊔ a ⊓ c := by
   sorry
 
@@ -146,17 +147,30 @@ variable (a b c : R)
 
 #check (add_le_add_left : a ≤ b → ∀ c, c + a ≤ c + b)
 #check (mul_pos : 0 < a → 0 < b → 0 < a * b)
-
+#check one_pos
+#check le_of_add_le_add_left -- (bc : a + b ≤ a + c) : b ≤ c
 #check (mul_nonneg : 0 ≤ a → 0 ≤ b → 0 ≤ a * b)
+#check mul_le_mul_left_of_neg
+
 
 example (h : a ≤ b) : 0 ≤ b - a := by
-  sorry
+  have h1:_ := add_le_add_right h (-a)
+  rw [add_comm,neg_add_cancel] at h1
+  rw [←sub_eq_add_neg] at h1
+  exact h1
 
+--quickest way
 example (h: 0 ≤ b - a) : a ≤ b := by
-  sorry
+  rw [←neg_add_cancel b,add_comm,sub_eq_add_neg] at h
+  have h1:_ := le_of_add_le_add_left h
+  simp_all
+
 
 example (h : a ≤ b) (h' : 0 ≤ c) : a * c ≤ b * c := by
-  sorry
+  have h1: b-a ≥ 0 := by simp_all
+  have h2: (b-a)*c ≥0 := mul_nonneg h1 h'
+  rw [mul_sub_right_distrib] at h2
+  simp_all
 
 end
 
@@ -169,6 +183,10 @@ variable (x y z : X)
 #check (dist_triangle x y z : dist x z ≤ dist x y + dist y z)
 
 example (x y : X) : 0 ≤ dist x y := by
-  sorry
+  have h1:_ := dist_triangle x y x
+  rw [dist_self,dist_comm y] at h1
+  linarith
+
+
 
 end
