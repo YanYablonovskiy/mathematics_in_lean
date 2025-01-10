@@ -85,15 +85,55 @@ example (hfa : FnUb f a) (hgb : FnUb g b) : FnUb (fun x ↦ f x + g x) (a + b) :
   apply hfa
   apply hgb
 
-example (hfa : FnLb f a) (hgb : FnLb g b) : FnLb (fun x ↦ f x + g x) (a + b) :=
-  sorry
 
+--term version
+example (hfa : FnLb f a) (hgb : FnLb g b) : FnLb (fun x ↦ f x + g x) (a + b) :=
+  fun (x:ℝ) => add_le_add (hfa x) (hgb x)
+
+
+--tactic version
+example (hfa : FnLb f a) (hgb : FnLb g b) : FnLb (fun x ↦ f x + g x) (a + b) := by
+ intro x
+ dsimp
+ apply add_le_add
+ apply hfa
+ apply hgb
+
+
+
+variable (a b c: ℝ)
+
+#check mul_zero 0
+#check mul_le_mul (a:=0) (c:=0)
+
+--term proof
 example (nnf : FnLb f 0) (nng : FnLb g 0) : FnLb (fun x ↦ f x * g x) 0 :=
-  sorry
+  have h1:(FnLb (fun x ↦ f x * g x) (0*0)) := (fun (x:ℝ) => (mul_le_mul (a:=0) (c:=0) (nnf x) (nng x) (le_refl 0) (nnf x)))
+  show FnLb (fun x ↦ f x * g x) 0 from Eq.subst (mul_zero 0) h1
+
+
+
+example (nnf : FnLb f 0) (nng : FnLb g 0) : FnLb (fun x ↦ f x * g x) 0 := by
+  intro x
+  dsimp
+  rw [←mul_zero 0]
+  apply mul_le_mul
+  . apply nnf
+  . apply nng
+  . exact le_refl 0
+  . apply nnf
+
+
+
+#check mul_le_mul
 
 example (hfa : FnUb f a) (hgb : FnUb g b) (nng : FnLb g 0) (nna : 0 ≤ a) :
     FnUb (fun x ↦ f x * g x) (a * b) :=
-  sorry
+  fun (x:ℝ) => mul_le_mul (b:=a) (d:=b) (hfa x) (hgb x) (nng x) (nna)
+
+
+
+
 
 end
 
@@ -125,11 +165,31 @@ example (mf : Monotone f) (mg : Monotone g) : Monotone fun x ↦ f x + g x := by
 example (mf : Monotone f) (mg : Monotone g) : Monotone fun x ↦ f x + g x :=
   fun a b aleb ↦ add_le_add (mf aleb) (mg aleb)
 
-example {c : ℝ} (mf : Monotone f) (nnc : 0 ≤ c) : Monotone fun x ↦ c * f x :=
-  sorry
+
+--this works??
+-- example {c : ℝ} (mf : Monotone f) (nnc : 0 ≤ c) : Monotone fun x ↦ c * f x := by
+--    unfold
+
+--
+#check mul_le_mul_left
+
+
+example {c : ℝ} (mf : Monotone f) (nnc : 0 ≤ c) : Monotone fun x ↦ c * f x := by
+intro a b haleb
+dsimp
+cases lt_or_eq_of_le (nnc)
+. case inl h0ltc => exact (mul_le_mul_left (h0ltc)).mpr (mf haleb)
+. case inr hceq0 => rw [←hceq0,zero_mul,zero_mul]
+
 
 example (mf : Monotone f) (mg : Monotone g) : Monotone fun x ↦ f (g x) :=
-  sorry
+  /-
+     need f(g(a)) ≤ f(g(b)); can get it from mg and hleb
+  -/
+  fun a b haleb ↦ mf (mg haleb)
+
+
+
 
 def FnEven (f : ℝ → ℝ) : Prop :=
   ∀ x, f x = f (-x)
@@ -143,9 +203,28 @@ example (ef : FnEven f) (eg : FnEven g) : FnEven fun x ↦ f x + g x := by
     (fun x ↦ f x + g x) x = f x + g x := rfl
     _ = f (-x) + g (-x) := by rw [ef, eg]
 
+variable (a b c: ℝ) (g:ℝ → ℝ)
+#check FnOdd g
+#check neg_one_sq
+#check Eq.subst
+#check sq
+example (of : FnOdd f) (og : FnOdd g) : FnEven fun x ↦ f x * g x :=
+  fun x ↦
+   calc f x * g x = -f (-x) * g x := by rw [←(of x)]
+   _ = -f (-x) * (-g (-x)) := by rw [←(og x)]
+   _ = (f (-x)*(-1:ℝ)) *  (g (-x)*(-1:ℝ)) := by rw [←(mul_neg_one (f (-x))),←(mul_neg_one (g (-x)))]
+   _ = f (-x)*-1 * -1 *g (-x) := by rw [mul_comm (g (-x)),←mul_assoc]
+   _ = f (-x) *((-1:ℝ) * -1) * g (-x) := by rw [mul_assoc (f (-x))]
+   _ = f (-x) * g (-x) := by rw [←sq (-1),neg_one_sq,mul_assoc,one_mul (g (-x))]
 
-example (of : FnOdd f) (og : FnOdd g) : FnEven fun x ↦ f x * g x := by
-  sorry
+
+/-
+   have h1: (f x * g x = -f (-x) * g x) := Eq.subst (FnOdd f x)
+   have h2: -f (-x) * g x = -f (-x) * (-g (-x)) := Eq.subst (FnOdd g x)
+   have h3: f x * g x  = -f (-x) * (-g (-x)) := Eq.trans h1 h2
+
+-/
+#check a
 
 example (ef : FnEven f) (og : FnOdd g) : FnOdd fun x ↦ f x * g x := by
   sorry
