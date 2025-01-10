@@ -226,8 +226,8 @@ example (of : FnOdd f) (og : FnOdd g) : FnEven fun x ↦ f x * g x :=
 -/
 #check a
 
-example (ef : FnEven f) (og : FnOdd g) : FnOdd fun x ↦ f x * g x := 
-  fun x ↦ 
+example (ef : FnEven f) (og : FnOdd g) : FnOdd fun x ↦ f x * g x :=
+  fun x ↦
     calc f x * g x = f (-x) * g x := Eq.subst (ef x) (motive := fun y ↦ (f x * g x  = y * g x)) (Eq.refl (f x * g x))
     _ = f (-x) *  -g (-x) := Eq.subst (og x) (motive := fun y ↦ (f (-x) * g x  = f (-x) * y)) (Eq.refl (f (-x) * g x))
     _ = f (-x) * (-1*g (-x)) := Eq.subst (Eq.comm.mp (neg_one_mul (g (-x))))  (motive := fun y ↦ (f (-x) * -g (-x)  = f (-x) * y)) (Eq.refl (f (-x) * -g (-x)))
