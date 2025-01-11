@@ -1,4 +1,5 @@
-import MIL.Common
+import Mathlib.Tactic
+import Mathlib.Util.Delaborators
 import Mathlib.Data.Real.Basic
 
 set_option autoImplicit true
@@ -51,8 +52,31 @@ example (ubf : FnHasUb f) (ubg : FnHasUb g) : FnHasUb fun x ↦ f x + g x := by
   use a + b
   apply fnUb_add ubfa ubgb
 
+#check add_le_add
+
+
 example (lbf : FnHasLb f) (lbg : FnHasLb g) : FnHasLb fun x ↦ f x + g x := by
-  sorry
+rcases lbf with ⟨z,lbfz⟩
+rcases lbg with ⟨y,lngf⟩
+use z + y
+intro x
+apply add_le_add (lbfz x) (lngf x)
+
+
+
+
+--term proof
+example (lbf : FnHasLb f) (lbg : FnHasLb g) : FnHasLb fun x ↦ f x + g x :=
+match lbf with
+ | ⟨l,lf⟩ => match lbg with
+            | ⟨l1,lg⟩ => ⟨l +l1,fun x:ℝ ↦ add_le_add (lf x) (lg x)⟩
+
+
+--eq compiler proof
+example: FnHasLb f → FnHasLb g → FnHasLb fun x ↦ f x + g x
+| ⟨l,lf⟩,⟨l1,lg⟩ => ⟨l +l1,fun x:ℝ ↦ add_le_add (lf x) (lg x)⟩
+
+
 
 example {c : ℝ} (ubf : FnHasUb f) (h : c ≥ 0) : FnHasUb fun x ↦ c * f x := by
   sorry
