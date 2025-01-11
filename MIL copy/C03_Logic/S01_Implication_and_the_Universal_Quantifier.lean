@@ -253,10 +253,24 @@ example : s ⊆ s := by
   intro x xs
   exact xs
 
+example: s ⊆ s :=
+fun x ↦ fun h1:(x ∈ s) ↦ h1
+
+
+--same as above
 theorem Subset.refl : s ⊆ s := fun x xs ↦ xs
 
-theorem Subset.trans : r ⊆ s → s ⊆ t → r ⊆ t := by
-  sorry
+
+
+
+theorem Subset.trans : r ⊆ s → s ⊆ t → r ⊆ t :=
+ fun hrs hst x hxir  ↦ hst (hrs hxir)
+
+
+example: r ⊆ s → s ⊆ t → r ⊆ t := by
+intro hrs hst x hxir
+apply hst (hrs hxir)
+
 
 end
 
@@ -268,7 +282,13 @@ def SetUb (s : Set α) (a : α) :=
   ∀ x, x ∈ s → x ≤ a
 
 example (h : SetUb s a) (h' : a ≤ b) : SetUb s b :=
-  sorry
+  fun x xis ↦ le_trans ((h x) xis) h'
+
+example (h : SetUb s a) (h' : a ≤ b) : SetUb s b := by
+intro x xis
+apply le_trans _ h'
+. exact (h x) xis
+
 
 end
 
@@ -276,17 +296,47 @@ section
 
 open Function
 
+
+#check Injective
+#print Injective
+
+
 example (c : ℝ) : Injective fun x ↦ x + c := by
   intro x₁ x₂ h'
   exact (add_left_inj c).mp h'
 
+
+#check mul_eq_mul_left_iff
+
+example {c : ℝ} (h : c ≠ 0) : Injective fun x ↦ c * x :=
+  fun x y (hfx: c*x = c*y) ↦ (mul_eq_mul_left_iff.mp hfx).elim ( fun h1:_ ↦ h1) ( fun h2:_ ↦ False.elim (h h2))
+
 example {c : ℝ} (h : c ≠ 0) : Injective fun x ↦ c * x := by
-  sorry
+intro x y h
+dsimp at h
+cases mul_eq_mul_left_iff.mp h
+. case inl h => exact h
+. case inr => contradiction
+
+
+
+
+
+
 
 variable {α : Type*} {β : Type*} {γ : Type*}
 variable {g : β → γ} {f : α → β}
 
+example (injg : Injective g) (injf : Injective f) : Injective fun x ↦ g (f x) :=
+  fun x y h ↦ injf (injg h)
+
+
 example (injg : Injective g) (injf : Injective f) : Injective fun x ↦ g (f x) := by
-  sorry
+intro x y h
+dsimp at h
+apply injf (injg h)
+
+
+
 
 end
