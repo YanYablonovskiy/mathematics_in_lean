@@ -1,10 +1,15 @@
-import MIL.Common
+import Mathlib.Tactic
+import Mathlib.Util.Delaborators
 import Mathlib.Data.Real.Basic
 
 namespace C03S03
 
 section
 variable (a b : ℝ)
+
+
+#check lt_irrefl
+#check lt_asymm
 
 example (h : a < b) : ¬b < a := by
   intro h'
@@ -136,4 +141,3 @@ example (h : 0 < 0) : a > 37 := by
   contradiction
 
 end
-
