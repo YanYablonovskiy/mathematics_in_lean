@@ -76,10 +76,27 @@ match lbf with
 example: FnHasLb f → FnHasLb g → FnHasLb fun x ↦ f x + g x
 | ⟨l,lf⟩,⟨l1,lg⟩ => ⟨l +l1,fun x:ℝ ↦ add_le_add (lf x) (lg x)⟩
 
+#check mul_le_mul_of_nonneg_left
+
+ --tactic proof (sort of?)
+example {c : ℝ} (ubf : FnHasUb f) (h : c ≥ 0) : FnHasUb fun x ↦ c * f x := by
+  match ubf with
+  | ⟨a,ubfa⟩  => exact ⟨c*a, fun x ↦ (mul_le_mul_of_nonneg_left (a:=c) (ubfa x)) h ⟩
 
 
 example {c : ℝ} (ubf : FnHasUb f) (h : c ≥ 0) : FnHasUb fun x ↦ c * f x := by
-  sorry
+ let ⟨a,ubfa⟩ := ubf
+ apply Exists.intro (c*a)
+ intro x
+ dsimp
+ apply mul_le_mul_of_nonneg_left (a:=c)
+ . exact ubfa x
+ . exact h
+
+
+example {c: ℝ}: FnHasUb f → c ≥ 0  → FnHasUb fun x ↦ c * f x
+| ⟨a,ubfa⟩, h => ⟨c*a,  fun x ↦ (mul_le_mul_of_nonneg_left (a:=c) (ubfa x)) h ⟩
+
 
 example : FnHasUb f → FnHasUb g → FnHasUb fun x ↦ f x + g x := by
   rintro ⟨a, ubfa⟩ ⟨b, ubgb⟩
@@ -97,14 +114,14 @@ example (ubf : FnHasUb f) (ubg : FnHasUb g) : FnHasUb fun x ↦ f x + g x := by
 
 example (ubf : FnHasUb f) (ubg : FnHasUb g) : FnHasUb fun x ↦ f x + g x := by
   cases ubf
-  case intro a ubfa =>
+  case intro a ubfa => --only the one case, where there is an upper bound
     cases ubg
     case intro b ubgb =>
       exact ⟨a + b, fnUb_add ubfa ubgb⟩
 
 example (ubf : FnHasUb f) (ubg : FnHasUb g) : FnHasUb fun x ↦ f x + g x := by
   cases ubf
-  next a ubfa =>
+  next a ubfa => --next is short for case intro
     cases ubg
     next b ubgb =>
       exact ⟨a + b, fnUb_add ubfa ubgb⟩
@@ -152,8 +169,19 @@ example (divab : a ∣ b) (divbc : b ∣ c) : a ∣ c := by
   rw [ceq, beq]
   use d * e; ring
 
+
+#check left_distrib
 example (divab : a ∣ b) (divac : a ∣ c) : a ∣ b + c := by
-  sorry
+  match divab with
+  | ⟨d, beqad⟩ => match divac with
+    | ⟨e,ceqed⟩ => apply Exists.intro (d+e); rw [beqad,ceqed,←left_distrib]
+
+
+example (divab : a ∣ b) (divac : a ∣ c) : a ∣ b + c := by
+  rcases divab with ⟨d, beqad⟩
+  rcases divac with ⟨e,ceqed⟩
+  use d+e
+  rw [beqad,ceqed,←left_distrib]
 
 end
 
@@ -161,13 +189,23 @@ section
 
 open Function
 
+#check Surjective
+#print Surjective
+
+
 example {c : ℝ} : Surjective fun x ↦ x + c := by
   intro x
   use x - c
-  dsimp; ring
+  dsimp; ring;
 
+
+--tactic proof
 example {c : ℝ} (h : c ≠ 0) : Surjective fun x ↦ c * x := by
-  sorry
+  intro x
+  use c⁻¹ * x
+  dsimp; field_simp
+
+
 
 example (x y : ℝ) (h : x - y ≠ 0) : (x ^ 2 - y ^ 2) / (x - y) = x + y := by
   field_simp [h]
@@ -186,7 +224,18 @@ open Function
 variable {α : Type*} {β : Type*} {γ : Type*}
 variable {g : β → γ} {f : α → β}
 
+
+
+--tactic proof
 example (surjg : Surjective g) (surjf : Surjective f) : Surjective fun x ↦ g (f x) := by
-  sorry
+  intro y
+  rcases (surjg y) with ⟨b,hb⟩
+  rcases (surjf b) with ⟨x, hx⟩
+  dsimp
+  use x
+  rw [hx,hb]
+
+example (surjg : Surjective g) (surjf : Surjective f) : Surjective fun x ↦ g (f x) :=
+fun (y:γ) => let  ⟨b,hb⟩ := (surjg y);let  ⟨x, hx⟩ := (surjf b); by apply Exists.intro x;dsimp;rw [hx,hb]
 
 end
