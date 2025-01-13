@@ -22,7 +22,7 @@ example {x y : ℝ} (h₀ : x ≤ y) (h₁ : ¬y ≤ x) : x ≤ y ∧ x ≠ y :=
   ⟨h₀, h⟩
 
 example {x y : ℝ} (h : x ≤ y ∧ x ≠ y) : ¬y ≤ x := by
-  rcases h with ⟨h₀, h₁⟩ 
+  rcases h with ⟨h₀, h₁⟩
   contrapose! h₁ --now need ¬ ¬ y ≤ x → x = y ( y ≤ x →  x=y)
   exact le_antisymm h₀ h₁ --combined x≤y and y≤x to get x=y
 
@@ -96,7 +96,7 @@ example (x y : ℝ) : (∃ z : ℝ, x < z ∧ z < y) → x < y := by
   exact lt_trans xltz zlty --uses transitivity via z
 
 example (x y : ℝ) : (∃ z : ℝ, x < z ∧ z < y) → x < y :=
-  fun ⟨z, xltz, zlty⟩ ↦ lt_trans xltz zlty
+  fun ⟨z, xltz, zlty⟩ ↦ lt_trans xltz zlty --implicit deconstruction, term proof
 
 /-
 You can also use the use tactic:
@@ -104,17 +104,30 @@ You can also use the use tactic:
 
 example : ∃ x : ℝ, 2 < x ∧ x < 4 := by
   use 5 / 2
-  constructor <;> norm_num
+  constructor <;> norm_num --applies norm_num to each goal
 
 example : ∃ m n : ℕ, 4 < m ∧ m < n ∧ n < 10 ∧ Nat.Prime m ∧ Nat.Prime n := by
   use 5
   use 7
   norm_num
 
+--my one
+example : ∃ m n : ℕ, 4 < m ∧ m < n ∧ n < 10 ∧ Nat.Prime m ∧ Nat.Prime n := by
+  use 5
+  use 7
+  repeat constructor <;> norm_num
+
+
+
 example {x y : ℝ} : x ≤ y ∧ x ≠ y → x ≤ y ∧ ¬y ≤ x := by
   rintro ⟨h₀, h₁⟩
   use h₀
   exact fun h' ↦ h₁ (le_antisymm h₀ h')
+
+
+/-
+Iff section
+-/
 
 example {x y : ℝ} (h : x ≤ y) : ¬y ≤ x ↔ x ≠ y := by
   constructor
