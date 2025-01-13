@@ -22,13 +22,13 @@ example {x y : ℝ} (h₀ : x ≤ y) (h₁ : ¬y ≤ x) : x ≤ y ∧ x ≠ y :=
   ⟨h₀, h⟩
 
 example {x y : ℝ} (h : x ≤ y ∧ x ≠ y) : ¬y ≤ x := by
-  rcases h with ⟨h₀, h₁⟩
-  contrapose! h₁
-  exact le_antisymm h₀ h₁
+  rcases h with ⟨h₀, h₁⟩ 
+  contrapose! h₁ --now need ¬ ¬ y ≤ x → x = y ( y ≤ x →  x=y)
+  exact le_antisymm h₀ h₁ --combined x≤y and y≤x to get x=y
 
 example {x y : ℝ} : x ≤ y ∧ x ≠ y → ¬y ≤ x := by
-  rintro ⟨h₀, h₁⟩ h'
-  exact h₁ (le_antisymm h₀ h')
+  rintro ⟨h₀, h₁⟩ h' --via x ≤ y and y ≤ x (to get false) get x = y ( goal is false)
+  exact h₁ (le_antisymm h₀ h') -- use x ≠ y = ¬ (x = y) on (x=y)
 
 example {x y : ℝ} : x ≤ y ∧ x ≠ y → ¬y ≤ x :=
   fun ⟨h₀, h₁⟩ h' ↦ h₁ (le_antisymm h₀ h')
@@ -64,18 +64,43 @@ example {x y : ℝ} (h : x ≤ y ∧ x ≠ y) : ¬y ≤ x := by
 example {x y : ℝ} (h : x ≤ y ∧ x ≠ y) : ¬y ≤ x :=
   fun h' ↦ h.right (le_antisymm h.left h')
 
+#check Nat.div_left_inj
+
+#check Nat.eq_of_mul_eq_mul_left
+#check Nat.mul_one
+#check Nat.dvd_antisymm
+
+--tactic proof
+example {m n : ℕ} (h : m ∣ n ∧ m ≠ n) : m ∣ n ∧ ¬n ∣ m := by
+ constructor
+ . exact h.1
+ . intro ndm
+   exact h.2 (dvd_antisymm h.1 ndm)
+
+--term proof
 example {m n : ℕ} (h : m ∣ n ∧ m ≠ n) : m ∣ n ∧ ¬n ∣ m :=
-  sorry
+suffices hnndm: ¬n ∣ m from And.intro h.1 hnndm
+fun ndm => h.2 (dvd_antisymm h.1 ndm)
+
+/-
+You can nest uses of ∃ and ∧ with anonymous constructors, rintro, and rcases.
+-/
 
 example : ∃ x : ℝ, 2 < x ∧ x < 4 :=
-  ⟨5 / 2, by norm_num, by norm_num⟩
+  ⟨5 / 2, by norm_num, by norm_num⟩ --allows nesting i.e equal to ⟨ _, ⟨ _, _ ⟩ ⟩ . First is exists, then next is the And
+
+
 
 example (x y : ℝ) : (∃ z : ℝ, x < z ∧ z < y) → x < y := by
-  rintro ⟨z, xltz, zlty⟩
-  exact lt_trans xltz zlty
+  rintro ⟨z, xltz, zlty⟩ --since its after the :, allows implicit deconstruction of first argument
+  exact lt_trans xltz zlty --uses transitivity via z
 
 example (x y : ℝ) : (∃ z : ℝ, x < z ∧ z < y) → x < y :=
   fun ⟨z, xltz, zlty⟩ ↦ lt_trans xltz zlty
+
+/-
+You can also use the use tactic:
+-/
 
 example : ∃ x : ℝ, 2 < x ∧ x < 4 := by
   use 5 / 2
