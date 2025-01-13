@@ -1,23 +1,24 @@
-import MIL.Common
+import Mathlib.Tactic
+import Mathlib.Util.Delaborators
 import Mathlib.Data.Real.Basic
-import Mathlib.Data.Nat.Prime
+import Mathlib.Data.Nat.Prime.Basic
 
 namespace C03S04
 
 example {x y : ℝ} (h₀ : x ≤ y) (h₁ : ¬y ≤ x) : x ≤ y ∧ x ≠ y := by
-  constructor
-  · assumption
-  intro h
-  apply h₁
-  rw [h]
+  constructor --finds a suffices contructor and creates subgoals
+  · assumption --goal one comes from h₀
+  intro h --not need x≠y, start by h:x=y
+  apply h₁ --need False, apply h1 to get false from y ≤ x
+  rw [h] --rw into y≤y and solves by reflexivity
 
 example {x y : ℝ} (h₀ : x ≤ y) (h₁ : ¬y ≤ x) : x ≤ y ∧ x ≠ y :=
-  ⟨h₀, fun h ↦ h₁ (by rw [h])⟩
+  ⟨h₀, fun h ↦ h₁ (by rw [h])⟩ --anon constructor of and
 
 example {x y : ℝ} (h₀ : x ≤ y) (h₁ : ¬y ≤ x) : x ≤ y ∧ x ≠ y :=
   have h : x ≠ y := by
-    contrapose! h₁
-    rw [h₁]
+    contrapose! h₁ --now need ¬h (x=y)→ ¬ h1 ( ¬ ¬ y ≤ x = y ≤ x)
+    rw [h₁] --refl of ≤
   ⟨h₀, h⟩
 
 example {x y : ℝ} (h : x ≤ y ∧ x ≠ y) : ¬y ≤ x := by
