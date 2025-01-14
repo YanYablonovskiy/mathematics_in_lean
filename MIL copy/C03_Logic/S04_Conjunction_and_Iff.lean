@@ -130,36 +130,86 @@ Iff section
 -/
 
 example {x y : ℝ} (h : x ≤ y) : ¬y ≤ x ↔ x ≠ y := by
-  constructor
-  · contrapose!
-    rintro rfl
-    rfl
-  contrapose!
-  exact le_antisymm h
+  constructor --uses a suffices to get mp and mpr goals
+  · contrapose! -- x = y → y ≤ x
+    rintro rfl -- creates x = y
+    rfl --reflexivity of ≤ means x=y →y ≤ x
+  contrapose! -- y≤x → x = y
+  exact le_antisymm h --get x=y via antisym h and y≤x → x=y
 
 example {x y : ℝ} (h : x ≤ y) : ¬y ≤ x ↔ x ≠ y :=
-  ⟨fun h₀ h₁ ↦ h₀ (by rw [h₁]), fun h₀ h₁ ↦ h₀ (le_antisymm h h₁)⟩
+  ⟨fun h₀ h₁ ↦  h₀ (by rw [h₁]), fun h₀ h₁ ↦ h₀ (le_antisymm h h₁)⟩
 
+--term proof
 example {x y : ℝ} : x ≤ y ∧ ¬y ≤ x ↔ x ≤ y ∧ x ≠ y :=
-  sorry
+  ⟨fun ⟨hxley,hnylex⟩ ↦ ⟨hxley,fun hxeqy ↦ by rw [hxeqy] at hnylex;exact hnylex (le_refl y)⟩, fun ⟨hxley,hnxeqy⟩ ↦ ⟨hxley, fun hylex ↦ hnxeqy (le_antisymm hxley hylex) ⟩⟩
 
+
+--tactic proof
+example {x y : ℝ} : x ≤ y ∧ ¬y ≤ x ↔ x ≤ y ∧ x ≠ y := by
+  constructor
+  . intro ⟨hxley,hnylex⟩
+    constructor
+    . exact hxley
+    . intro hxeqy
+      rw [hxeqy] at hnylex
+      exact hnylex (le_refl y)
+  . intro ⟨hxley,hnxeqy⟩
+    constructor
+    . exact hxley
+    . intro hylex
+      exact hnxeqy (le_antisymm hxley hylex)
+
+
+
+
+#check pow_two_nonneg
+#check pow_eq_zero
+#check lt_of_le_of_ne
+#check ne_comm.mp
+#check add_pos_of_nonneg_of_pos
+
+--tactic-term proof (no term proof for this one, too long)
 theorem aux {x y : ℝ} (h : x ^ 2 + y ^ 2 = 0) : x = 0 :=
-  have h' : x ^ 2 = 0 := by sorry
+  have h' : x ^ 2 = 0 := by
+   by_contra! h'
+   have: x^2 > 0 := lt_of_le_of_ne (pow_two_nonneg x) (ne_comm.mp h')
+   have: y^2 + x^2 > 0 := (add_pos_of_nonneg_of_pos (pow_two_nonneg y) this)
+   linarith
   pow_eq_zero h'
 
-example (x y : ℝ) : x ^ 2 + y ^ 2 = 0 ↔ x = 0 ∧ y = 0 :=
-  sorry
+#check zero_pow
+#check not_and.mp
+--term-tactic proof
+example (x y : ℝ) : x ^ 2 + y ^ 2 = 0 ↔ x = 0 ∧ y = 0 := by
+ constructor
+ . intro heq0
+   constructor
+   . exact aux heq0
+   . rw [add_comm] at heq0
+     exact aux heq0
+ . rintro ⟨xeq0,yeq0⟩
+   rw [xeq0,yeq0]
+   rw [zero_pow (by linarith)]
+   rw [zero_add]
 
 section
 
+
+--using propext here to rw iff as equality
+
+#check abs_lt --  |a| < b ↔ -b < a ∧ a < b
 example (x : ℝ) : |x + 3| < 5 → -8 < x ∧ x < 2 := by
   rw [abs_lt]
   intro h
   constructor <;> linarith
 
+
+#check Nat.dvd_gcd_iff -- k ∣ m.gcd n ↔ k ∣ m ∧ k ∣ n
+
 example : 3 ∣ Nat.gcd 6 15 := by
   rw [Nat.dvd_gcd_iff]
-  constructor <;> norm_num
+  constructor <;> norm_num -- gets 3|6 and 3|15 via norm_num
 
 end
 
@@ -168,16 +218,37 @@ theorem not_monotone_iff {f : ℝ → ℝ} : ¬Monotone f ↔ ∃ x y, x ≤ y �
   push_neg
   rfl
 
+
+#check Monotone
+#print Monotone -- → (α → β) → Prop := fun {α} {β} [Preorder α] [Preorder β] f => ∀ ⦃a b : α⦄, a ≤ b → f a ≤ f b
+
+#check neg_le_neg
 example : ¬Monotone fun x : ℝ ↦ -x := by
-  sorry
+  rw [Monotone]
+  push_neg
+  use 2
+  use 3
+  norm_num
 
 section
 variable {α : Type*} [PartialOrder α]
 variable (a b : α)
 
+#check lt_iff_le_not_le --a < b ↔ a ≤ b ∧ ¬b ≤ a
 example : a < b ↔ a ≤ b ∧ a ≠ b := by
-  rw [lt_iff_le_not_le]
-  sorry
+  rw [lt_iff_le_not_le] --rewrutes a < b with a ≤ b ∧ ¬b ≤ a to make goal a ≤ b ∧ ¬b ≤ a ↔  a ≤ b ∧ a ≠ b
+  constructor
+  . rintro ⟨h,h1⟩
+    constructor
+    . exact h
+    . by_contra h'
+      rw [h'] at h1
+      exact h1 (le_refl b)
+  . rintro ⟨h2,h3⟩
+    constructor
+    . exact h2
+    . by_contra h'
+      exact h3 (le_antisymm h2 h')
 
 end
 
@@ -185,12 +256,21 @@ section
 variable {α : Type*} [Preorder α]
 variable (a b c : α)
 
+#check lt_iff_le_not_le --a < b ↔ a ≤ b ∧ ¬b ≤ a
 example : ¬a < a := by
-  rw [lt_iff_le_not_le]
-  sorry
+  rw [lt_iff_le_not_le] --rewrites goal into ¬ (a ≤ b ∧ ¬b ≤ a)
+  push_neg
+  intro h
+  exact h
 
+#check le_trans --a ≤ b → b ≤ c → a ≤ c
 example : a < b → b < c → a < c := by
   simp only [lt_iff_le_not_le]
-  sorry
+  intro a1 a2
+  constructor
+  . exact le_trans a1.1 a2.1
+  . by_contra h'
+    have: c ≤ b := le_trans h' a1.1
+    exact a2.2 this
 
 end
