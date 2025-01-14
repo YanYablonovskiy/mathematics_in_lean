@@ -1,4 +1,5 @@
-import MIL.Common
+import Mathlib.Tactic
+import Mathlib.Util.Delaborators
 import Mathlib.Data.Real.Basic
 
 namespace C03S06
@@ -6,9 +7,22 @@ namespace C03S06
 def ConvergesTo (s : ℕ → ℝ) (a : ℝ) :=
   ∀ ε > 0, ∃ N, ∀ n ≥ N, |s n - a| < ε
 
+
+/-
+The notation ∀ ε > 0, ... is a convenient abbreviation for ∀ ε, ε > 0 → ..., and, similarly,
+∀ n ≥ N, ... abbreviates ∀ n, n ≥ N →  ....
+
+And remember that ε > 0, in turn, is defined as 0 < ε, and n ≥ N is defined as N ≤ n.
+-/
+
 example : (fun x y : ℝ ↦ (x + y) ^ 2) = fun x y : ℝ ↦ x ^ 2 + 2 * x * y + y ^ 2 := by
-  ext
+  ext --prove equality for any pair of inputs
+  ring --use ring to get (x + y) ^ 2 = x ^ 2 + 2 * x * y + y ^ 2 for each entry, extenstionality of functions implies equality
+
+example (a b : ℝ) : |a| = |a - b + b| := by
+  congr
   ring
+
 
 example (a b : ℝ) : |a| = |a - b + b| := by
   congr
@@ -100,4 +114,3 @@ def ConvergesTo' (s : α → ℝ) (a : ℝ) :=
   ∀ ε > 0, ∃ N, ∀ n ≥ N, |s n - a| < ε
 
 end
-
