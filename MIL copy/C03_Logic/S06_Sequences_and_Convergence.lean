@@ -28,10 +28,17 @@ example (a b : ℝ) : |a| = |a - b + b| := by
   congr
   ring
 
+
+#check (mul_lt_mul_right _).2
+/-
+  0 < a → (b * a < c * a ↔ b < c)
+-/
+
 example {a : ℝ} (h : 1 < a) : a < a * a := by
-  convert (mul_lt_mul_right _).2 h
-  · rw [one_mul]
-  exact lt_trans zero_lt_one h
+  convert (mul_lt_mul_right _).2 h --convert goal intro b * a < c * a, i.e 1*a < a*a; also introduce a >0
+                                   --this means it creates goals to get the goal (a < a * a) out of 1*a < a*a
+  · rw [one_mul]                   --which creates a=1*a .
+  exact lt_trans zero_lt_one h --get a > 0 from 1 > 0 and a > 1
 
 theorem convergesTo_const (a : ℝ) : ConvergesTo (fun x : ℕ ↦ a) a := by
   intro ε εpos
