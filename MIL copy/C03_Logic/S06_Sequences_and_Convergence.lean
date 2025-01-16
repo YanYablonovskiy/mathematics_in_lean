@@ -41,22 +41,59 @@ example {a : ℝ} (h : 1 < a) : a < a * a := by
   exact lt_trans zero_lt_one h --get a > 0 from 1 > 0 and a > 1
 
 theorem convergesTo_const (a : ℝ) : ConvergesTo (fun x : ℕ ↦ a) a := by
-  intro ε εpos
-  use 0
-  intro n nge
-  rw [sub_self, abs_zero]
-  apply εpos
+  intro ε εpos --for all ε > 0, given such
+  use 0 --use 0 for N, so for n ≥ N
+  intro n nge --intro n ≥ 0
+  rw [sub_self, abs_zero] --now need |a - a| < ε; sub_self to get |0|, and abs_zero to get 0 < ε as equivalent statement
+  apply εpos --true by assumption, for any ε>0
 
+
+
+#check norm_add_le
+#check le_max_left
+#check le_max_of_le_left
 theorem convergesTo_add {s t : ℕ → ℝ} {a b : ℝ}
       (cs : ConvergesTo s a) (ct : ConvergesTo t b) :
     ConvergesTo (fun n ↦ s n + t n) (a + b) := by
   intro ε εpos
   dsimp -- this line is not needed but cleans up the goal a bit.
   have ε2pos : 0 < ε / 2 := by linarith
-  rcases cs (ε / 2) ε2pos with ⟨Ns, hs⟩
+  rcases cs (ε / 2) ε2pos with ⟨Ns, hs⟩ --cs (ε/2) is ∃N, and hs is ∀n≥Ns ...
   rcases ct (ε / 2) ε2pos with ⟨Nt, ht⟩
   use max Ns Nt
-  sorry
+  intro n
+  have: |(s n) + (t n) - (a + b)| = |((s n) - a) + ((t n) - b)| := by congr;ring
+  have trh:|((s n) - a) + ((t n) - b)| ≤ |(s n) - a| + |(t n) - b| := norm_add_le ((s n) - a) ((t n) - b)
+  intro hns
+  have h1: n ≥ Ns ∧ n ≥ Nt := by
+   constructor
+   . exact le_trans (le_max_left Ns Nt) (hns)
+   . exact le_trans (le_max_right Ns Nt) (hns)
+  have h2: |(s n) - a| < ε/2 ∧ |(t n) - b| < ε/2 := by
+   constructor
+   . exact (hs n) h1.1
+   . exact (ht n) h1.2
+  linarith
+
+#check norm_mul
+
+#check mul_lt_mul_of_nonneg -- (h₁ : a < b) (h₂ : c < d) (a0 : 0 ≤ a) (c0 : 0 ≤ c) : a * c < b * d
+
+/-
+|s n - a| < e / (2 * |c|)
+|c| * |s n - a| < e
+-/
+#check inv_pos.mpr
+#check mul_pos
+#check two_pos
+#check mul_lt_mul_of_pos_of_nonneg --(h₁ : a ≤ b) (h₂ : c < d) (a0 : 0 < a) (d0 : 0 ≤ d) : a * c < b * d
+
+/-
+this : |s n - a| < e / (2 * |c|)
+⊢ |c| * |s n - a| < |c| * (e / (2 * |c|))
+-/
+
+
 
 theorem convergesTo_mul_const {s : ℕ → ℝ} {a : ℝ} (c : ℝ) (cs : ConvergesTo s a) :
     ConvergesTo (fun n ↦ c * s n) (c * a) := by
@@ -66,14 +103,41 @@ theorem convergesTo_mul_const {s : ℕ → ℝ} {a : ℝ} (c : ℝ) (cs : Conver
       ring
     rw [h]
     ring
-  have acpos : 0 < |c| := abs_pos.mpr h
-  sorry
+  . have acpos : 0 < |c| := abs_pos.mpr h
+    intro e epos
+    have: 2*|c| > 0 := mul_pos (two_pos) acpos
+    have: ( 2 * |c| )⁻¹ > 0 := inv_pos.mpr this
+    have h2:  e / (2 * |c|) > 0 := mul_pos epos this
+    rcases cs (e/(2*|c|)) h2 with ⟨Na,ha⟩
+    use Na
+    intro n nnonneg
+    dsimp
+    rw [←mul_sub (a:=c) (s n) a]
+    have h1:|s n - a| < e / (2 * |c|) := (ha n) nnonneg
+    rw [abs_mul]
+    have h3: |c| * |s n - a| < |c| * (e / (2*|c|)) := mul_lt_mul_of_pos_of_nonneg (a:=|c|) (le_refl |c|) h1 acpos (le_of_lt h2)
+    have: |c| * (e / (2 * |c|)) = e/2 := by field_simp; rw [mul_comm |c|,mul_comm 2,mul_assoc]
+    rw [this] at h3
+    linarith
 
+
+
+#check abs_sub_abs_le_abs_sub
+#check lt_of_le_of_lt
 theorem exists_abs_le_of_convergesTo {s : ℕ → ℝ} {a : ℝ} (cs : ConvergesTo s a) :
     ∃ N b, ∀ n, N ≤ n → |s n| < b := by
-  rcases cs 1 zero_lt_one with ⟨N, h⟩
+  rcases cs 1 zero_lt_one with ⟨N, h⟩ --with 1 of a , i.e |s n - a| < 1
   use N, |a| + 1
-  sorry
+  intro n hnN
+  have h1: |s n - a| < 1 := (h n) hnN
+  have h2: |s n| - |a| ≤ |s n - a| := abs_sub_abs_le_abs_sub (s n) a
+  have:|s n| - |a| < 1 := lt_of_le_of_lt h2 h1
+  linarith
+
+
+
+
+
 
 theorem aux {s t : ℕ → ℝ} {a : ℝ} (cs : ConvergesTo s a) (ct : ConvergesTo t 0) :
     ConvergesTo (fun n ↦ s n * t n) 0 := by
