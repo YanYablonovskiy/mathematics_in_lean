@@ -136,8 +136,8 @@ theorem exists_abs_le_of_convergesTo {s : ℕ → ℝ} {a : ℝ} (cs : Converges
 
 
 
-
-
+#check le_max_left
+#check mul_lt_mul -- (h₁ : a < b) (h₂ : c ≤ d) (c0 : 0 < c) (b0 : 0 ≤ b) : a * c < b * d
 
 theorem aux {s t : ℕ → ℝ} {a : ℝ} (cs : ConvergesTo s a) (ct : ConvergesTo t 0) :
     ConvergesTo (fun n ↦ s n * t n) 0 := by
@@ -147,7 +147,18 @@ theorem aux {s t : ℕ → ℝ} {a : ℝ} (cs : ConvergesTo s a) (ct : Converges
   have Bpos : 0 < B := lt_of_le_of_lt (abs_nonneg _) (h₀ N₀ (le_refl _))
   have pos₀ : ε / B > 0 := div_pos εpos Bpos
   rcases ct _ pos₀ with ⟨N₁, h₁⟩
-  sorry
+  use max N₀ N₁
+  intro n hnn
+  have h₂:|t n - 0| < ε / B := (h₁ n) (le_trans (le_max_right N₀ N₁) hnn)
+  rw [sub_zero,abs_mul]
+  rw [sub_zero] at h₂
+  have h₃: |s n| < B := (h₀ n) (le_trans (le_max_left N₀ N₁) hnn)
+  have: |s n| * |t n| < B*(ε/B) :=  by
+   by_cases h: t n = 0
+   . rw [h,abs_zero,mul_zero];field_simp; exact εpos
+   . have: |t n| > 0 := abs_pos.mpr h;exact mul_lt_mul (b:=B)  (d:=ε/B) h₃ (le_of_lt h₂) this (le_of_lt Bpos)
+  field_simp at this
+  exact this
 
 theorem convergesTo_mul {s t : ℕ → ℝ} {a b : ℝ}
       (cs : ConvergesTo s a) (ct : ConvergesTo t b) :
@@ -160,12 +171,21 @@ theorem convergesTo_mul {s t : ℕ → ℝ} {a b : ℝ}
   convert convergesTo_add h₁ (convergesTo_mul_const b cs) using 1
   · ext; ring
   ring
+#check lt_or_gt_of_ne
+#check sub_pos_of_lt
+#check abs_pos_of_pos
+#check abs_sub_comm
+#check abs_add
 
+#check abs_sub_abs_le_abs_sub
 theorem convergesTo_unique {s : ℕ → ℝ} {a b : ℝ}
       (sa : ConvergesTo s a) (sb : ConvergesTo s b) :
     a = b := by
   by_contra abne
-  have : |a - b| > 0 := by sorry
+  have : |a - b| > 0 := by
+   rcases ( lt_or_gt_of_ne abne) with c1 | c2
+   . rw [abs_sub_comm];exact (abs_pos_of_pos (sub_pos_of_lt c1))
+   . exact (abs_pos_of_pos (sub_pos_of_lt c2))
   let ε := |a - b| / 2
   have εpos : ε > 0 := by
     change |a - b| / 2 > 0
@@ -173,9 +193,17 @@ theorem convergesTo_unique {s : ℕ → ℝ} {a b : ℝ}
   rcases sa ε εpos with ⟨Na, hNa⟩
   rcases sb ε εpos with ⟨Nb, hNb⟩
   let N := max Na Nb
-  have absa : |s N - a| < ε := by sorry
-  have absb : |s N - b| < ε := by sorry
-  have : |a - b| < |a - b| := by sorry
+  have absa : |s N - a| < ε := by exact (hNa N) (le_max_left Na Nb)
+  have absb : |s N - b| < ε := by exact (hNb N) (le_max_right Na Nb)
+  have : |a - b| < |a - b| := by
+   have t1:|(s N - b) - (s N - a)| ≤ |s N - b| + |s N - a| := abs_sub _ _
+   have t2: |s N - b| + |s N - a| < 2*ε := by linarith
+   have t3: (s N - b) - (s N - a) = a - b := by ring
+   have t4: |s N - b| + |s N - a| < 2*(|a-b|/2) := t2
+   have t5: 2*(|a-b|/2) = |a-b| := by ring
+   rw [t5] at t4
+   rw [t3] at t1
+   linarith
   exact lt_irrefl _ this
 
 section
