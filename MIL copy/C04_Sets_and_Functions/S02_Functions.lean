@@ -92,7 +92,7 @@ example : f '' (f ⁻¹' u) ⊆ u := by
 {α : Sort u₁} → {β : Sort u₂} → (α → β) → Prop :=
 fun {α} {β} f => ∀ (b : β), ∃ a, f a = b
 -/
-example (h : Surjective f) : u ⊆ f '' (f ⁻¹' u) := by
+example (h : Surjective f) : u ⊆ f '' (f ⁻¹' u) := by --f ⁻¹' u meaning x: f(x) ∈ u ; y ∈ f'' meaning exists x, such that x in (f(x) ∈ u) and f(x) = y
   intro x
   contrapose!
   intro h1
@@ -108,7 +108,9 @@ example (h : Surjective f) : u ⊆ f '' (f ⁻¹' u) := by
 
 
 example (h : s ⊆ t) : f '' s ⊆ f '' t := by
-  sorry
+  intro x hf
+  rcases hf with ⟨a,as,yfa⟩
+  exact ⟨a,(h as),yfa⟩
 
 example (h : u ⊆ v) : f ⁻¹' u ⊆ f ⁻¹' v := by
   sorry
