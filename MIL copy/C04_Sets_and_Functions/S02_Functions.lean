@@ -1,4 +1,5 @@
-import MIL.Common
+import Mathlib.Tactic
+import Mathlib.Util.Delaborators
 import Mathlib.Data.Set.Lattice
 import Mathlib.Data.Set.Function
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
@@ -13,13 +14,30 @@ variable (u v : Set β)
 open Function
 open Set
 
+/-
+If f : α → β is a function and p is a set of elements of type β, the library defines preimage f p, written f ⁻¹' p, to be {x | f x ∈ p}.
+
+The expression x ∈ f ⁻¹' p reduces to f x ∈ p. This is often convenient, as in the following example:
+-/
+
+
+
 example : f ⁻¹' (u ∩ v) = f ⁻¹' u ∩ f ⁻¹' v := by
-  ext
+  ext --x✝ ∈ f ⁻¹' (u ∩ v) ↔ x✝ ∈ f ⁻¹' u ∩ f ⁻¹' , which is really x | f x ∈ u ∩ f x ∈ v , and x | f x ∈ u ∩ x | f x ∈ v
   rfl
 
+
+
+/-
+If s is a set of elements of type α, the library also defines image f s, written f '' s, to be {y | ∃ x, x ∈ s ∧ f x = y}.
+
+So a hypothesis y ∈ f '' s decomposes to a triple ⟨x, xs, xeq⟩ with x : α satisfying the hypotheses xs : x ∈ s and xeq : f x = y.
+
+The rfl tag in the rintro tactic (see Section 3.2) was made precisely for this sort of situation.
+-/
 example : f '' (s ∪ t) = f '' s ∪ f '' t := by
   ext y; constructor
-  · rintro ⟨x, xs | xt, rfl⟩
+  · rintro ⟨x, xs | xt, rfl⟩ --rfl for the f'' x = f x
     · left
       use x, xs
     right
@@ -34,7 +52,21 @@ example : s ⊆ f ⁻¹' (f '' s) := by
   use x, xs
 
 example : f '' s ⊆ v ↔ s ⊆ f ⁻¹' v := by
-  sorry
+  constructor
+  . intro h
+    intro h1 h1p
+    simp
+    have: f h1 ∈ f '' s := ⟨h1,h1p,rfl⟩
+    exact h this
+  . intro h
+    intro h1 h1s
+    rcases h1s with ⟨x,xis,xeq⟩
+    have: x ∈  f ⁻¹' v := h xis
+    simp at this
+    rw [xeq] at this
+    exact this
+
+
 
 example (h : Injective f) : f ⁻¹' (f '' s) ⊆ s := by
   sorry
@@ -81,39 +113,19 @@ example : s ∪ f ⁻¹' u ⊆ f ⁻¹' (f '' s ∪ u) := by
 variable {I : Type*} (A : I → Set α) (B : I → Set β)
 
 example : (f '' ⋃ i, A i) = ⋃ i, f '' A i := by
-  ext y; simp
-  constructor
-  · rintro ⟨x, ⟨i, xAi⟩, fxeq⟩
-    use i, x
-  rintro ⟨i, x, xAi, fxeq⟩
-  exact ⟨x, ⟨i, xAi⟩, fxeq⟩
+  sorry
 
 example : (f '' ⋂ i, A i) ⊆ ⋂ i, f '' A i := by
-  intro y; simp
-  intro x h fxeq i
-  use x
-  exact ⟨h i, fxeq⟩
+  sorry
 
 example (i : I) (injf : Injective f) : (⋂ i, f '' A i) ⊆ f '' ⋂ i, A i := by
-  intro y; simp
-  intro h
-  rcases h i with ⟨x, xAi, fxeq⟩
-  use x; constructor
-  · intro i'
-    rcases h i' with ⟨x', x'Ai, fx'eq⟩
-    have : f x = f x' := by rw [fxeq, fx'eq]
-    have : x = x' := injf this
-    rw [this]
-    exact x'Ai
-  exact fxeq
+  sorry
 
 example : (f ⁻¹' ⋃ i, B i) = ⋃ i, f ⁻¹' B i := by
-  ext x
-  simp
+  sorry
 
 example : (f ⁻¹' ⋂ i, B i) = ⋂ i, f ⁻¹' B i := by
-  ext x
-  simp
+  sorry
 
 example : InjOn f s ↔ ∀ x₁ ∈ s, ∀ x₂ ∈ s, f x₁ = f x₂ → x₁ = x₂ :=
   Iff.refl _
