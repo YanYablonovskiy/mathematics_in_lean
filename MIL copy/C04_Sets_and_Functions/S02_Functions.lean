@@ -66,16 +66,46 @@ example : f '' s ⊆ v ↔ s ⊆ f ⁻¹' v := by
     rw [xeq] at this
     exact this
 
-
+#check Injective f
+#print Injective
 
 example (h : Injective f) : f ⁻¹' (f '' s) ⊆ s := by
-  sorry
+  intro x hx
+  simp at hx
+  rcases hx with ⟨y,hey⟩
+  have: y=x := h hey.2
+  rw [Eq.comm.mp this]
+  exact hey.1
+
+
+
 
 example : f '' (f ⁻¹' u) ⊆ u := by
-  sorry
+  intro x hx
+  simp at hx
+  rcases hx with ⟨x,fxu,feqx⟩
+  rw [Eq.comm.mp feqx]
+  exact fxu
 
+#print Surjective
+/-
+{α : Sort u₁} → {β : Sort u₂} → (α → β) → Prop :=
+fun {α} {β} f => ∀ (b : β), ∃ a, f a = b
+-/
 example (h : Surjective f) : u ⊆ f '' (f ⁻¹' u) := by
-  sorry
+  intro x
+  contrapose!
+  intro h1
+  intro xu
+  simp at h1
+  rcases h x with ⟨a,fa⟩
+  have := h1 a
+  rw  [fa] at this
+  have := this xu
+  exact this (Eq.refl x)
+
+
+
 
 example (h : s ⊆ t) : f '' s ⊆ f '' t := by
   sorry
