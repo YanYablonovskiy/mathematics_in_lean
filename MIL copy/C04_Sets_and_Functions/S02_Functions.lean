@@ -116,7 +116,7 @@ example (h : u ⊆ v) : f ⁻¹' u ⊆ f ⁻¹' v := by
   sorry
 
 example : f ⁻¹' (u ∪ v) = f ⁻¹' u ∪ f ⁻¹' v := by
-  sorry
+  rfl
 
 example : f '' (s ∩ t) ⊆ f '' s ∩ f '' t := by
   sorry
