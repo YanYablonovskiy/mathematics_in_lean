@@ -153,7 +153,7 @@ example : s ∪ s ∩ t = s := by
   ext x
   constructor
   . rintro (xs | ⟨xs,xt⟩ ) <;> exact xs
-  . intro _; exact _
+  . intro h; exact Or.inl h
 
 
 example : s \ t ∪ t = s ∪ t := by
@@ -168,11 +168,36 @@ example : s \ t ∪ t = s ∪ t := by
       . exact Or.inl ⟨xs,h⟩
     . exact Or.inr xt
 
+#check inter_def
 
 example : s \ t ∪ t \ s = (s ∪ t) \ (s ∩ t) := by
   ext x
   constructor
-  admit
+  . intro h
+    rcases h with h|h
+    . constructor
+      . exact Or.inl h.1
+      . intro hst
+        exact h.2 hst.2
+    . constructor
+      . exact Or.inr h.1
+      . intro hst
+        exact h.2 hst.1
+  . intro h
+    rcases h with ⟨hst,hnst⟩
+    rcases hst with h|h
+    . apply Or.inl
+      constructor
+      . exact h
+      . intro xt
+        have: x ∈ s ∩ t := by constructor; exact h;exact xt
+        exact hnst this
+    . apply Or.inr
+      constructor
+      . exact h
+      . intro xt
+        have: x ∈ s ∩ t := by constructor; exact xt;exact h
+        exact hnst this
 
 
 --set builder notation
@@ -219,7 +244,7 @@ example (x : ℕ) : x ∈ (univ : Set ℕ) :=
 
 
 
-#check Nat.prime_def_lt 
+#check Nat.prime_def_lt
 #check IsUnit a
 #check isUnit_iff_eq_one.mp
 
@@ -242,7 +267,7 @@ example : { n | Nat.Prime n } ∩ { n | n > 2 } ⊆ { n | ¬Even n } := by
     contradiction
 
 
-  
+
 
 
 #print Prime
@@ -266,10 +291,10 @@ section
 variable (s t : Set ℕ)
 
 example (h₀ : ∀ x ∈ s, ¬Even x) (h₁ : ∀ x ∈ s, Prime x) : ∀ x ∈ s, ¬Even x ∧ Prime x := by
-  intro x xs
-  constructor
-  · apply h₀ x xs
-  apply h₁ x xs
+  intro x xs--introducting an x, that is in s
+  constructor --contructing the and, need ¬Even forst goal and Prime second goal
+  · apply h₀ x xs --applying h∘ which needs an x and xs to get ¬Even
+  apply h₁ x xs   --applying h₁ which needs an x and xs to get Prime
 
 example (h : ∃ x ∈ s, ¬Even x ∧ Prime x) : ∃ x ∈ s, Prime x := by
   rcases h with ⟨x, xs, _, prime_x⟩
@@ -278,12 +303,35 @@ example (h : ∃ x ∈ s, ¬Even x ∧ Prime x) : ∃ x ∈ s, Prime x := by
 section
 variable (ssubt : s ⊆ t)
 
+--tactic proof 1
 example (h₀ : ∀ x ∈ t, ¬Even x) (h₁ : ∀ x ∈ t, Prime x) : ∀ x ∈ s, ¬Even x ∧ Prime x := by
-  sorry
+  intro x xs
+  have := ssubt xs
+  constructor
+  . exact h₀ x this
+  . exact h₁ x this
+--tactic proof 2
+example (h₀ : ∀ x ∈ t, ¬Even x) (h₁ : ∀ x ∈ t, Prime x) : ∀ x ∈ s, ¬Even x ∧ Prime x := by
+  intro x xs
+  have := ssubt xs
+  constructor <;> (first| exact h₀ x this | exact h₁ x this)
+
 
 example (h : ∃ x ∈ s, ¬Even x ∧ Prime x) : ∃ x ∈ t, Prime x := by
-  sorry
+  rcases h with ⟨x, xs, h⟩
+  have := ssubt xs
+  use x
+  exact ⟨this,h.2⟩
 
+
+/-
+Indexed unions and intersections are another important set-theoretic construction. We can model a sequence
+of sets of elements of α as a function A : ℕ → Set α, in which case ⋃ i, A i denotes their union,
+and ⋂ i, A i denotes their intersection.
+
+There is nothing special about the natural numbers here, so ℕ can be replaced by any
+type I used to index the sets. The following illustrates their use.
+-/
 end
 
 end
@@ -294,6 +342,11 @@ variable (A B : I → Set α)
 variable (s : Set α)
 
 open Set
+
+
+#check mem_iUnion --x ∈ ⋃ i, s i ↔ ∃ i, x ∈ s i
+#check mem_inter_iff --(x : α) (a b : Set α) : x ∈ a ∩ b ↔ x ∈ a ∧ x ∈ b
+
 
 example : (s ∩ ⋃ i, A i) = ⋃ i, A i ∩ s := by
   ext x
@@ -319,14 +372,30 @@ example : (⋂ i, A i ∩ B i) = (⋂ i, A i) ∩ ⋂ i, B i := by
   · exact h1 i
   exact h2 i
 
-
+#check Or.inl
 example : (s ∪ ⋂ i, A i) = ⋂ i, A i ∪ s := by
-  sorry
+  ext x
+  simp
+  constructor
+  . intro h1
+    rcases h1 with hxs | hxi
+    . intro i
+      exact Or.inr hxs
+    . intro i
+      exact Or.inl (hxi i)
+  . intro h2;
+    by_contra!
+    rcases this with ⟨hxnis,⟨i,hxai⟩⟩
+    cases (h2 i)
+    . case h.mpr.intro.intro.inl h => exact hxai h
+    . case h.mpr.intro.intro.inr h => exact hxnis h
+
+
 
 def primes : Set ℕ :=
   { x | Nat.Prime x }
 
-example : (⋃ p ∈ primes, { x | p ^ 2 ∣ x }) = { x | ∃ p ∈ primes, p ^ 2 ∣ x } :=by
+example : (⋃ p ∈ primes, { x | p ^ 2 ∣ x }) = { x | ∃ p ∈ primes, p ^ 2 ∣ x } := by
   ext
   rw [mem_iUnion₂]
   simp
@@ -340,9 +409,28 @@ example : (⋂ p ∈ primes, { x | ¬p ∣ x }) ⊆ { x | x = 1 } := by
   contrapose!
   simp
   apply Nat.exists_prime_and_dvd
+#check univ
 
+
+#check subset_univ
+#check Nat.exists_infinite_primes
 example : (⋃ p ∈ primes, { x | x ≤ p }) = univ := by
-  sorry
+  ext x
+  constructor
+  . rw [mem_iUnion₂]
+    rw [univ]
+    intro h
+    rcases h with ⟨i,ih⟩
+    rcases ih with ⟨ip,iph⟩
+    trivial
+  . intro xu
+    by_contra!
+    rw [mem_iUnion₂] at this
+    rcases (Nat.exists_infinite_primes x) with ⟨i,hi⟩
+    push_neg at this
+    exact (this i hi.2) hi.1
+
+
 
 end
 
