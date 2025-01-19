@@ -141,7 +141,18 @@ example : f '' (s ∩ t) ⊆ f '' s ∩ f '' t := by
     . exact xeq
 
 example (h : Injective f) : f '' s ∩ f '' t ⊆ f '' (s ∩ t) := by
-  sorry
+  intro x h3
+  simp at h3
+  rcases h3 with ⟨h1,h2⟩
+  rcases h1 with ⟨x,xs,xeq⟩
+  rcases h2 with ⟨y,ys,yeq⟩
+  rw [Eq.comm.mp xeq] at yeq
+  have := h yeq
+  rw [this] at ys
+  simp
+  use x
+
+
 
 example : f '' s \ f '' t ⊆ f '' (s \ t) := by
   sorry
