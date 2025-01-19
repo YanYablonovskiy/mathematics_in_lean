@@ -113,13 +113,32 @@ example (h : s ⊆ t) : f '' s ⊆ f '' t := by
   exact ⟨a,(h as),yfa⟩
 
 example (h : u ⊆ v) : f ⁻¹' u ⊆ f ⁻¹' v := by
-  sorry
+  intro x hx
+  simp at hx
+  simp
+  show f x ∈ v
+  exact h hx
+
+
 
 example : f ⁻¹' (u ∪ v) = f ⁻¹' u ∪ f ⁻¹' v := by
   rfl
 
 example : f '' (s ∩ t) ⊆ f '' s ∩ f '' t := by
-  sorry
+  intro x hfx
+  simp at hfx
+  simp
+  constructor
+  . rcases hfx with ⟨x,hxst,xeq⟩
+    use x
+    constructor
+    . exact hxst.1
+    . exact xeq
+  . rcases hfx with ⟨x,hxst,xeq⟩
+    use x
+    constructor
+    . exact hxst.2
+    . exact xeq
 
 example (h : Injective f) : f '' s ∩ f '' t ⊆ f '' (s ∩ t) := by
   sorry
