@@ -155,7 +155,15 @@ example (h : Injective f) : f '' s ∩ f '' t ⊆ f '' (s ∩ t) := by
 
 
 example : f '' s \ f '' t ⊆ f '' (s \ t) := by
-  sorry
+  intro x h
+  simp at h
+  rcases h with ⟨h1,h2⟩
+  rcases h1 with ⟨x1,x1s,x1eq⟩
+  simp
+  have h3: x1 ∉ t := fun (t1:x1 ∈ t) ↦ (h2 x1) t1 (x1eq)
+  use x1
+
+
 
 example : f ⁻¹' u \ f ⁻¹' v ⊆ f ⁻¹' (u \ v) := by
   sorry
