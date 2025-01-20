@@ -343,7 +343,16 @@ end
 section
 
 open Set Real
+/-
+The statement Injective f is provably equivalent to InjOn f univ.
 
+Similarly, the library defines range f to be {x | ∃y, f y = x}, so range f is provably equal to f '' univ.
+
+This is a common theme in Mathlib: although many properties of functions are defined relative to their full domain,
+there are often relativized versions that restrict the statements to a subset of the domain type.
+
+Here is are some examples of InjOn and range in use:
+-/
 example : InjOn log { x | x > 0 } := by
   intro x xpos y ypos
   intro e
@@ -362,17 +371,61 @@ example : range exp = { y | y > 0 } := by
   use log y
   rw [exp_log ypos]
 
+#check sq_sqrt
+
 example : InjOn sqrt { x | x ≥ 0 } := by
-  sorry
+  intro x xnonneg y ynonneg
+  intro rteq
+  calc x = (√x)^2 := Eq.comm.mp (sq_sqrt xnonneg)
+       _ = (√y)^2 := by rw [rteq]
+       _ = y := sq_sqrt ynonneg
+
 
 example : InjOn (fun x ↦ x ^ 2) { x : ℝ | x ≥ 0 } := by
-  sorry
+  intro x xnonneg y ynonneg
+  intro powtwoeq
+  simp at powtwoeq
+  calc x = √(x^2) := Eq.comm.mp (sqrt_sq xnonneg)
+       _ = √(y^2) := by rw [powtwoeq]
+       _ = y := sqrt_sq ynonneg
+
+#check sqrt_nonneg
+#check pow_two_nonneg
 
 example : sqrt '' { x | x ≥ 0 } = { y | y ≥ 0 } := by
-  sorry
+  ext x
+  constructor
+  . intro h
+    simp at h
+    rcases h with ⟨x1,x1nonneg,xeq⟩
+    simp
+    rw [Eq.comm.mp xeq]
+    exact sqrt_nonneg x1
+  . intro h
+    simp at h
+    simp
+    use (x^2)
+    constructor
+    . exact pow_two_nonneg x
+    . exact sqrt_sq h
+
 
 example : (range fun x ↦ x ^ 2) = { y : ℝ | y ≥ 0 } := by
-  sorry
+  ext x
+  constructor
+  . intro h
+    simp at h
+    simp
+    rcases h with ⟨y,hy⟩
+    rw [Eq.comm.mp hy]
+    exact pow_two_nonneg y
+  . intro h
+    simp at h
+    simp
+    use √x
+    exact sq_sqrt h
+
+
 
 end
 
@@ -403,11 +456,55 @@ variable (f : α → β)
 
 open Function
 
-example : Injective f ↔ LeftInverse (inverse f) f :=
-  sorry
+#print LeftInverse
+/-
+ {α : Sort u₁} → {β : Sort u₂} → (g:β → α) → (f:α → β) → Prop :=
+fun {α} {β} g f => ∀ (x : α), g (f x) = x --like a normal inverse
+-/
+#print RightInverse
+/-
+def Function.RightInverse.{u₁, u₂} : {α : Sort u₁} → {β : Sort u₂} → (g:β → α) → (f:α → β) → Prop :=
+fun {α} {β} g f => LeftInverse f g  ( f (g (x)) = x )
+-/
+#check dif_pos
+#print Injective
+#check choose
+#check choose_spec
 
-example : Surjective f ↔ RightInverse (inverse f) f :=
-  sorry
+example : Injective f ↔ LeftInverse (inverse f) f := by
+ rw [Injective,LeftInverse]
+ constructor
+ . intro h
+   intro x
+   rw [inverse]
+   have t1: ∃ x_1, f x_1 = f x := Exists.intro x rfl
+   rw [dif_pos t1]
+   have t2: f (choose t1) = f x := by simp [choose_spec t1]
+   have := h t2
+   exact this
+ . intro h a1 a2 hfa
+   have t3:_ := h a1
+   have t4:_ := Eq.comm.mp (h a2)
+   rw [hfa] at t3
+   apply Eq.comm.mp
+   exact Eq.trans t4 t3
+
+
+example : Surjective f ↔ RightInverse (inverse f) f := by
+ rw [RightInverse,Surjective,LeftInverse]
+ constructor
+ . intro h
+   intro x
+   rw [inverse]
+   have := h x
+   rw [dif_pos this]
+   rw [choose_spec this]
+ . intro h
+   intro b
+   use (inverse f b)
+   exact h b
+
+
 
 end
 
@@ -415,18 +512,20 @@ section
 variable {α : Type*}
 open Function
 
-theorem Cantor : ∀ f : α → Set α, ¬Surjective f := by
-  intro f surjf
-  let S := { i | i ∉ f i }
-  rcases surjf S with ⟨j, h⟩
+theorem Cantor : ∀ f : α → Set α, ¬Surjective f := by --no surjective function from something to its power set
+  intro f surjf --need false from Surjective
+  let S := { i | i ∉ f i } --define an element of Set α
+  rcases surjf S with ⟨j, h⟩ --j is what takes α to S;
   have h₁ : j ∉ f j := by
     intro h'
     have : j ∉ f j := by rwa [h] at h'
-    contradiction
+    exact this h'
+    --contradiction
   have h₂ : j ∈ S
-  sorry
+  exact h₁
   have h₃ : j ∉ S
-  sorry
+  rw [h] at h₁
+  exact h₁
   contradiction
 
 -- COMMENTS: TODO: improve this
