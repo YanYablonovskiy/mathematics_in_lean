@@ -166,36 +166,174 @@ example : f '' s \ f '' t ⊆ f '' (s \ t) := by
 
 
 example : f ⁻¹' u \ f ⁻¹' v ⊆ f ⁻¹' (u \ v) := by
-  sorry
+  --x:α ∈ f⁻¹' u (u : Set β) means x | (f x ∈ u) or fun x ↦ u f x
+  intro x h
+  rcases h with ⟨h1,h2⟩
+  simp at h1
+  simp at h2
+  simp
+  constructor
+  . exact h1
+  . exact h2
+
+#check subset_antisymm
+example : f ⁻¹' (u \ v) ⊆ f ⁻¹' u \ f ⁻¹' v := by
+intro x h
+simp at h
+simp
+exact h
+
+--my one
+example : f ⁻¹' u \ f ⁻¹' v = f ⁻¹' (u \ v) := by
+apply subset_antisymm
+. intro x h
+  rcases h with ⟨h1,h2⟩
+  simp at h1
+  simp at h2
+  simp
+  constructor
+  . exact h1
+  . exact h2
+. intro x h
+  simp at h
+  simp
+  exact h
+
 
 example : f '' s ∩ v = f '' (s ∩ f ⁻¹' v) := by
-  sorry
+  ext x
+  constructor
+  . intro h
+    simp at h
+    rcases h with ⟨h1,h2⟩
+    rcases h1 with ⟨x1,x1s,x1eq⟩
+    simp
+    use x1
+    constructor
+    constructor
+    . exact x1s
+    . have: f x1 ∈ v := by rw [Eq.comm.mp x1eq] at h2; exact h2
+      exact this
+    . exact x1eq
+  . intro h
+    simp at h
+    rcases h with ⟨x1,h1,h2⟩
+    simp
+    constructor
+    . use x1
+      exact ⟨h1.1,h2⟩
+    . have: x ∈ v := by rw [h2] at h1; exact h1.2
+      exact this
+
 
 example : f '' (s ∩ f ⁻¹' u) ⊆ f '' s ∩ u := by
-  sorry
+  intro x h
+  simp at h
+  rcases h with ⟨x1,hx1₁,hx1eq⟩
+  rcases hx1₁ with ⟨hx2,hx3⟩
+  simp
+  constructor
+  . use x1
+  . rw [hx1eq] at hx3
+    exact hx3
+
 
 example : s ∩ f ⁻¹' u ⊆ f ⁻¹' (f '' s ∩ u) := by
-  sorry
+  intro x h
+  simp at h
+  rcases h with ⟨h1,h2⟩
+  simp
+  constructor
+  . use x
+  . exact h2
 
 example : s ∪ f ⁻¹' u ⊆ f ⁻¹' (f '' s ∪ u) := by
-  sorry
+  intro x h
+  simp at h
+  simp
+  match h with
+  | Or.inl h1 => apply Or.inl; use x
+  | Or.inr h2 => exact Or.inr h2
+
 
 variable {I : Type*} (A : I → Set α) (B : I → Set β)
 
 example : (f '' ⋃ i, A i) = ⋃ i, f '' A i := by
-  sorry
+ ext x
+ constructor
+ . intro h
+   simp at h
+   simp
+   rcases h with ⟨x1,hi⟩
+   rcases hi with ⟨hi1,x1eq⟩
+   rcases hi1 with ⟨i,x1Ai⟩
+   use i
+   use x1
+ . intro h
+   simp at h
+   rcases h with ⟨i,hi⟩
+   rcases hi with ⟨x1,x1Ai,x1eq⟩
+   simp
+   use x1
+   constructor
+   . use i
+   . exact x1eq
+
 
 example : (f '' ⋂ i, A i) ⊆ ⋂ i, f '' A i := by
-  sorry
+  intro x h
+  simp at h
+  rcases h with ⟨x1,hx1,x1eq⟩
+  simp
+  intro i
+  use x1
+  constructor
+  . exact hx1 i
+  . exact x1eq
 
 example (i : I) (injf : Injective f) : (⋂ i, f '' A i) ⊆ f '' ⋂ i, A i := by
-  sorry
+  intro x hx
+  simp at hx
+  have := hx i
+  rcases this with ⟨x1,x1Ai,x1eq⟩
+  simp
+  by_contra!
+  apply this x1 _
+  . exact x1eq
+  . by_contra! fh
+    rcases fh with ⟨I,x1ni⟩
+    have t1:_ := hx I
+    rcases t1 with ⟨t2,t3⟩
+    have t4: x1 = t2 := by rw [Eq.comm.mp t3.2] at x1eq;exact injf x1eq
+    rw [t4] at x1ni
+    exact (x1ni t3.1)
+
 
 example : (f ⁻¹' ⋃ i, B i) = ⋃ i, f ⁻¹' B i := by
-  sorry
+  ext x
+  constructor
+  . intro hx
+    simp at hx
+    rcases hx with ⟨i,fxBi⟩
+    simp
+    use i
+  . intro hx
+    simp at hx
+    rcases hx with ⟨i,fxBi⟩
+    simp
+    use i
 
 example : (f ⁻¹' ⋂ i, B i) = ⋂ i, f ⁻¹' B i := by
-  sorry
+  ext x
+  constructor
+  . intro hx
+    simp at hx
+    simp
+    exact hx
+  . intro hx
+    simp at hx
+    simp
+    exact hx
 
 example : InjOn f s ↔ ∀ x₁ ∈ s, ∀ x₂ ∈ s, f x₁ = f x₂ → x₁ = x₂ :=
   Iff.refl _
