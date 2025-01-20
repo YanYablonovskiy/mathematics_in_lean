@@ -1,16 +1,26 @@
 import Mathlib.Data.Set.Lattice
 import Mathlib.Data.Set.Function
-import MIL.Common
+import Mathlib.Tactic
+import Mathlib.Util.Delaborators
 
 open Set
 open Function
+/-
+
+-/
+
 
 noncomputable section
 open Classical
 variable {α β : Type*} [Nonempty β]
 
+
+
 section
 variable (f : α → β) (g : β → α)
+
+
+
 
 def sbAux : ℕ → Set α
   | 0 => univ \ g '' univ
@@ -28,12 +38,24 @@ theorem sb_right_inv {x : α} (hx : x ∉ sbSet f g) : g (invFun g x) = x := by
     rw [sbSet, mem_iUnion]
     use 0
     rw [sbAux, mem_diff]
-    sorry
+    constructor
+    . trivial
+    . exact hx
   have : ∃ y, g y = x := by
     sorry
   sorry
 
-theorem sb_injective (hf : Injective f) (hg : Injective g) : Injective (sbFun f g) := by
+section
+variable (g : β → α) (x : α)
+
+#check (invFun g : α → β)
+#check (leftInverse_invFun : Injective g → LeftInverse (invFun g) g)
+#check (leftInverse_invFun : Injective g → ∀ y, invFun g (g y) = y)
+#check (invFun_eq : (∃ y, g y = x) → g (invFun g x) = x)
+
+end
+
+theorem sb_injective (hf : Injective f) : Injective (sbFun f g) := by
   set A := sbSet f g with A_def
   set h := sbFun f g with h_def
   intro x₁ x₂
@@ -45,7 +67,7 @@ theorem sb_injective (hf : Injective f) (hg : Injective g) : Injective (sbFun f 
     · symm
       apply this hxeq.symm xA.symm (xA.resolve_left x₁A)
     have x₂A : x₂ ∈ A := by
-      apply not_imp_self.mp
+      apply _root_.not_imp_self.mp
       intro (x₂nA : x₂ ∉ A)
       rw [if_pos x₁A, if_neg x₂nA] at hxeq
       rw [A_def, sbSet, mem_iUnion] at x₁A
@@ -57,10 +79,10 @@ theorem sb_injective (hf : Injective f) (hg : Injective g) : Injective (sbFun f 
       simp [sbAux]
       exact ⟨x₁, hn, x₂eq.symm⟩
     sorry
-  push_neg  at xA
+  push_neg at xA
   sorry
 
-theorem sb_surjective (hf : Injective f) (hg : Injective g) : Surjective (sbFun f g) := by
+theorem sb_surjective (hg : Injective g) : Surjective (sbFun f g) := by
   set A := sbSet f g with A_def
   set h := sbFun f g with h_def
   intro y
@@ -83,7 +105,7 @@ end
 
 theorem schroeder_bernstein {f : α → β} {g : β → α} (hf : Injective f) (hg : Injective g) :
     ∃ h : α → β, Bijective h :=
-  ⟨sbFun f g, sb_injective f g hf hg, sb_surjective f g hf hg⟩
+  ⟨sbFun f g, sb_injective f g hf, sb_surjective f g hg⟩
 
 -- Auxiliary information
 section
