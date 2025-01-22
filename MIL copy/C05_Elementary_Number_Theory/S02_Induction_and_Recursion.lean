@@ -1,6 +1,6 @@
 import Mathlib.Data.Nat.GCD.Basic
-import Mathlib.Algebra.BigOperators.Basic
-import MIL.Common
+import Mathlib.Tactic
+import Mathlib.Util.Delaborators
 
 example (n : Nat) : n.succ ≠ Nat.zero :=
   Nat.succ_ne_zero n
@@ -8,9 +8,43 @@ example (n : Nat) : n.succ ≠ Nat.zero :=
 example (m n : Nat) (h : m.succ = n.succ) : m = n :=
   Nat.succ.inj h
 
+
+/-
+The set of natural numbers is not only fundamentally important in its own right, but also a plays a central role in the construction of new mathematical objects.
+
+Lean’s foundation allows us to declare inductive types, which are types generated inductively by a given list of constructors.
+
+In Lean, the natural numbers are declared as follows.
+-/
+namespace mine
+
+inductive Nat where
+  | zero : Nat
+  | succ (n : Nat) : Nat
+
+end mine
+
+#check (Nat)
+
 def fac : ℕ → ℕ
   | 0 => 1
   | n + 1 => (n + 1) * fac n
+
+--mine
+def fac' (n: Nat): Nat :=
+let rec loop : Nat → Nat × Nat
+    | 0   => (1, 1)
+    | 1   => (1,1)
+    | 2   => (1,2)
+    | n+1 => let p := loop n; (p.2, (n+1) * p.2)
+ (loop n).2
+
+#eval fac 1
+#eval fac' 6
+
+
+#check (1,2,3)
+#eval  (1,2,3).2
 
 example : fac 0 = 1 :=
   rfl
@@ -18,11 +52,25 @@ example : fac 0 = 1 :=
 example : fac 0 = 1 := by
   rw [fac]
 
+--doesnt work
+example : fac' 0 = 1 := by
+  rw [fac'];admit
+--works
+example : fac' 0 = 1 := by
+ rfl
+
+
 example : fac 0 = 1 := by
   simp [fac]
 
 example (n : ℕ) : fac (n + 1) = (n + 1) * fac n :=
   rfl
+
+
+--no longer works for my fac , since its not definitionally true
+--though computationally faster?
+example (n : ℕ) : fac' (n + 1) = (n + 1) * fac' n := by
+ rw [fac'];admit
 
 example (n : ℕ) : fac (n + 1) = (n + 1) * fac n := by
   rw [fac]
@@ -31,7 +79,7 @@ example (n : ℕ) : fac (n + 1) = (n + 1) * fac n := by
   simp [fac]
 
 theorem fac_pos (n : ℕ) : 0 < fac n := by
-  induction' n with n ih
+  induction' n with n ih --ih being the induction hypothesis bridging the zero cases with any n
   · rw [fac]
     exact zero_lt_one
   rw [fac]
@@ -39,17 +87,37 @@ theorem fac_pos (n : ℕ) : 0 < fac n := by
 
 theorem dvd_fac {i n : ℕ} (ipos : 0 < i) (ile : i ≤ n) : i ∣ fac n := by
   induction' n with n ih
-  · exact absurd ipos (not_lt_of_ge ile)
+  · exact absurd ipos (not_lt_of_ge ile) --ile being i ≤ 0 here for n = 0, which is absurd with ipos: i > 0
   rw [fac]
   rcases Nat.of_le_succ ile with h | h
   · apply dvd_mul_of_dvd_right (ih h)
   rw [h]
   apply dvd_mul_right
 
+#check mul_le_mul_of_nonneg --  (h₁ : a ≤ b) (h₂ : c ≤ d) (a0 : 0 ≤ a) (d0 : 0 ≤ d) : a * c ≤ b * d
+#check Nat.one_le_of_lt
+#check pow_succ
+
+
 theorem pow_two_le_fac (n : ℕ) : 2 ^ (n - 1) ≤ fac n := by
   rcases n with _ | n
   · simp [fac]
-  sorry
+  . simp [fac]
+    induction n with
+    | zero => simp [fac]
+    | succ n ih =>
+      simp [fac]
+      rw [pow_succ]
+      have: 2 ≤ n + 1 + 1 := by linarith
+      rw [mul_comm (n+1+1)]
+      apply mul_le_mul_of_nonneg (a:=2^n) (d:= (n+1+1))
+      . exact ih
+      . exact this
+      . simp
+      . simp
+
+
+
 section
 
 variable {α : Type*} (s : Finset ℕ) (f : ℕ → ℕ) (n : ℕ)
@@ -86,8 +154,8 @@ example (f : ℕ → ℕ) (n : ℕ) : ∏ x in range n.succ, f x = (∏ x in ran
 
 example (n : ℕ) : fac n = ∏ i in range n, (i + 1) := by
   induction' n with n ih
-  · rw [fac, prod_range_zero]
-  rw [fac, ih, prod_range_succ, mul_comm]
+  · simp [fac, prod_range_zero]
+  simp [fac, ih, prod_range_succ, mul_comm]
 
 example (a b c d e f : ℕ) : a * (b * c * f * (d * e)) = d * (a * f * e) * (c * b) := by
   simp [mul_assoc, mul_comm, mul_left_comm]
@@ -96,14 +164,14 @@ theorem sum_id (n : ℕ) : ∑ i in range (n + 1), i = n * (n + 1) / 2 := by
   symm; apply Nat.div_eq_of_eq_mul_right (by norm_num : 0 < 2)
   induction' n with n ih
   · simp
-  rw [Finset.sum_range_succ, mul_add 2, ← ih, Nat.succ_eq_add_one]
+  rw [Finset.sum_range_succ, mul_add 2, ← ih]
   ring
 
 theorem sum_sqr (n : ℕ) : ∑ i in range (n + 1), i ^ 2 = n * (n + 1) * (2 * n + 1) / 6 := by
   sorry
 end
 
-inductive MyNat
+inductive MyNat where
   | zero : MyNat
   | succ : MyNat → MyNat
 
