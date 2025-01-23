@@ -251,6 +251,8 @@ theorem zero_add (n : MyNat) : add zero n = n := by
   · rfl
   rw [add, ih]
 
+
+
 theorem succ_add (m n : MyNat) : add (succ m) n = succ (add m n) := by
   induction' n with n ih
   · rfl
@@ -264,13 +266,47 @@ theorem add_comm (m n : MyNat) : add m n = add n m := by
   rw [add, succ_add, ih]
 
 theorem add_assoc (m n k : MyNat) : add (add m n) k = add m (add n k) := by
-  sorry
+  induction' n with j ih
+  . rw [zero_add]
+    nth_rewrite 2 [add_comm]
+    rw [zero_add]
+  . rw [succ_add,add_comm m,succ_add,succ_add,add_comm j,ih]
+    rw [add_comm m (j.add k).succ,succ_add,add_comm m]
+
+
 theorem mul_add (m n k : MyNat) : mul m (add n k) = add (mul m n) (mul m k) := by
-  sorry
+  induction' k with j ih
+  . rw [add_comm n,zero_add]
+    have: mul m zero = zero := rfl
+    rw [this,add_comm,zero_add]
+  . rw [add_comm n,succ_add]
+    simp [mul]
+    rw [add_comm j,ih,add_assoc]
+
+
 theorem zero_mul (n : MyNat) : mul zero n = zero := by
-  sorry
+  induction' n with j ih
+  . rfl
+  . simp [mul]
+    rw [add_comm,zero_add,ih]
+
 theorem succ_mul (m n : MyNat) : mul (succ m) n = add (mul m n) n := by
-  sorry
+  induction' n with j ih
+  . simp [mul,zero_add]
+  . simp [mul,add]
+    rw [ih]
+    rcases m with z | s
+    . simp [zero_mul,zero_add]
+      rw [add_comm,zero_add]
+    . rw [add_comm]
+      simp [succ_add]
+      rw [add_comm _ s.succ]
+      simp [succ_add,mul,add_assoc]
+   
+    
 theorem mul_comm (m n : MyNat) : mul m n = mul n m := by
-  sorry
+  induction' n with j ih
+  . simp [mul,zero_mul]
+  . simp [mul,succ_mul,ih]
+
 end MyNat
