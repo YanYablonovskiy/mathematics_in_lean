@@ -196,7 +196,9 @@ theorem _root_.Nat.Prime.eq_of_dvd_of_prime {p q : ℕ}
     have := (Nat.Prime.dvd_iff_eq prime_q t4).mp h
     simp [this]
 
-
+#check Finset.prod_insert
+-- ∀ n ∈ s, Nat.Prime n
+-- a ∉ s → ∏ x ∈ insert a s, f x = f a * ∏ x ∈ s, f x
 theorem mem_of_dvd_prod_primes {s : Finset ℕ} {p : ℕ} (prime_p : p.Prime) :
     (∀ n ∈ s, Nat.Prime n) → (p ∣ ∏ n in s, n) → p ∈ s := by
   intro h₀ h₁
@@ -205,7 +207,51 @@ theorem mem_of_dvd_prod_primes {s : Finset ℕ} {p : ℕ} (prime_p : p.Prime) :
     linarith [prime_p.two_le]
   simp [Finset.prod_insert ans, prime_p.dvd_mul] at h₀ h₁
   rw [mem_insert]
-  sorry
+  rcases h₁ with h₁₁|h₁₂
+  . apply Or.inl
+    . apply _root_.Nat.Prime.eq_of_dvd_of_prime
+      . exact prime_p
+      . exact h₀.1
+      . exact h₁₁
+  . apply Or.inr
+    apply ih
+    . exact h₀.2
+    . exact h₁₂
+
+
+theorem mem_of_dvd_prod_primes' {s : Finset ℕ} {p : ℕ} (prime_p : p.Prime) :
+    (∀ n ∈ s, Nat.Prime n) → (p ∣ ∏ n in s, n) → p ∈ s := by
+  intro h₀ h₁
+  /-
+  h₀ : ∀ n ∈ s, Nat.Prime n
+  h₁ : p ∣ ∏ n ∈ s, n
+  ⊢ p ∈ s
+  -/
+  induction' s using Finset.induction_on with a s ans ih
+  /-
+  a : ℕ
+  s : Finset ℕ
+  ans : a ∉ s
+  ih : (∀ n ∈ s, Nat.Prime n) → p ∣ ∏ n ∈ s, n → p ∈ s
+  -/
+  · simp at h₁
+    linarith [prime_p.two_le]
+  . simp [Finset.prod_insert ans] at h₁
+    --  ∀ n ∈ insert a s, Nat.Prime n
+    simp [prime_p.dvd_mul] at h₀ h₁
+    rw [mem_insert]
+    rcases h₁ with h₁₁|h₁₂
+    . apply Or.inl
+      . apply _root_.Nat.Prime.eq_of_dvd_of_prime
+        . exact prime_p
+        . exact h₀.1
+        . exact h₁₁
+    . apply Or.inr
+      apply ih
+      . exact h₀.2
+      . exact h₁₂
+
+
 example (s : Finset ℕ) (x : ℕ) : x ∈ s.filter Nat.Prime ↔ x ∈ s ∧ x.Prime :=
   mem_filter
 
