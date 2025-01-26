@@ -1,28 +1,67 @@
-import Mathlib.Data.Nat.Prime
-import Mathlib.Algebra.BigOperators.Order
-import MIL.Common
+import Mathlib.Data.Nat.Prime.Basic
+import Mathlib.Tactic
+import Mathlib.Util.Delaborators
 
 open BigOperators
 
 namespace C05S03
 
+
+/-
+Infinitely Many Primes
+Let us continue our exploration of induction and recursion with another mathematical standard: a proof that there are infinitely many primes.
+
+One way to formulate this is as the statement that for every natural number n, there is a prime number p greater than n.
+
+To prove this, let p be any prime factor of n!+1
+. If p is less than or equal to n, it divides n!.
+. Since it also divides n!+1, it divides 1, a contradiction.
+. Hence p is greater than
+
+To formalize that proof, we need to show that any number greater than or equal to 2 has a prime factor.
+
+To do that, we will need to show that any natural number that is not equal to 0 or 1 is greater-than or equal to 2.
+And this brings us to a quirky feature of formalization: it is often trivial statements like this that are among the most annoying to formalize.
+
+Here we consider a few ways to do it.
+
+To start with, we can use the cases tactic and the fact that the successor function respects the ordering on the natural numbers.
+
+-/
+
 theorem two_le {m : ℕ} (h0 : m ≠ 0) (h1 : m ≠ 1) : 2 ≤ m := by
-  cases m; contradiction
-  case succ m =>
+  cases m; contradiction --not zero
+  case succ m => --not succ zero (1)
     cases m; contradiction
-    repeat' apply Nat.succ_le_succ
+    repeat apply Nat.succ_le_succ
     apply zero_le
 
+/-
+Another strategy is to use the tactic interval_cases, which automatically splits the goal into cases when the variable in question is
+contained in an interval of natural numbers or integers.
+
+Remember that you can hover over it to see its documentation.
+-/
 example {m : ℕ} (h0 : m ≠ 0) (h1 : m ≠ 1) : 2 ≤ m := by
   by_contra h
   push_neg at h
-  interval_cases m <;> contradiction
+  interval_cases m <;> contradiction --interval cases finds atoms for m < 2 which are 0 and 1; each leading to a contradiction
+/-
+Recall that the semicolon after interval_cases m means that the next tactic is applied to each of the cases that it generates.
+
+Yet another option is to use the tactic decide, which tries to find a decision procedure to solve the problem.
+
+Lean knows that you can decide the truth value of a statement that begins with a bounded quantifier ∀ x, x < n → ... or ∃ x, x < n ∧ ...
+by deciding each of the finitely many instances.
+-/
+
+
 
 example {m : ℕ} (h0 : m ≠ 0) (h1 : m ≠ 1) : 2 ≤ m := by
   by_contra h
   push_neg at h
   revert h0 h1
-  revert h m
+  revert h m --decide on ∀ {m : ℕ}, m < 2 → m ≠ 0 → m ≠ 1 → False (needs decideable eq)
   decide
 
 theorem exists_prime_factor {n : Nat} (h : 2 ≤ n) : ∃ p : Nat, p.Prime ∧ p ∣ n := by
@@ -31,33 +70,60 @@ theorem exists_prime_factor {n : Nat} (h : 2 ≤ n) : ∃ p : Nat, p.Prime ∧ p
   induction' n using Nat.strong_induction_on with n ih
   rw [Nat.prime_def_lt] at np
   push_neg at np
-  rcases np h with ⟨m, mltn, mdvdn, mne1⟩
+  rcases np h with ⟨m, mltn, mdvdn, mne1⟩ --if n is not prime, it has a factor m
   have : m ≠ 0 := by
     intro mz
-    rw [mz, zero_dvd_iff] at mdvdn
-    linarith
-  have mgt2 : 2 ≤ m := two_le this mne1
-  by_cases mp : m.Prime
+    rw [mz, zero_dvd_iff] at mdvdn --get n=0, from 0|n
+    linarith --get false from n= 0 m = 0 but n < m
+  have mgt2 : 2 ≤ m := two_le this mne1 --this factor is larger than 2
+  by_cases mp : m.Prime --if the factor is prime we are done
   · use m, mp
-  . rcases ih m mltn mgt2 mp with ⟨p, pp, pdvd⟩
+  · rcases ih m mltn mgt2 mp with ⟨p, pp, pdvd⟩ --if not, then since its less than n by ih it must have a prime factor p
     use p, pp
-    apply pdvd.trans mdvdn
+    apply pdvd.trans mdvdn --use transitivity to get a prime factor of n
+
+set_option pp.rawOnError true
+
+#check Nat.lt_succ_self
+#check Nat.dvd_factorial
+#check Nat.Prime.pos
+#check Nat.dvd_sub'
+#check Nat.le_of_dvd
+#check Nat.dvd_one.mp
+#check Nat.Prime.ne_one
+
+
 
 theorem primes_infinite : ∀ n, ∃ p > n, Nat.Prime p := by
   intro n
   have : 2 ≤ Nat.factorial (n + 1) + 1 := by
-    sorry
-  rcases exists_prime_factor this with ⟨p, pp, pdvd⟩
-  refine' ⟨p, _, pp⟩
+    induction' n with j ih
+    . simp
+    . have: (j+1+1).factorial = (j+1).factorial*(j+1+1) := by simp [Nat.factorial,Nat.mul_comm]
+      rw [this,mul_add,mul_one]
+      apply le_trans ih
+      . simp
+  rcases exists_prime_factor this with ⟨p, pp, pdvd⟩ --getting the prime factor out of Nat.factorial (n + 1) + 1
+  refine ⟨p, ?_, pp⟩ --use this prime factor of Nat.factorial (n + 1) + 1; leaving the goal of p > n
   show p > n
   by_contra ple
-  push_neg  at ple
+  push_neg at ple
   have : p ∣ Nat.factorial (n + 1) := by
-    sorry
+    apply Nat.dvd_factorial
+    . exact (Nat.Prime.pos pp)
+    . linarith
   have : p ∣ 1 := by
-    sorry
+    have t1: 1 = (Nat.factorial (n + 1) + 1) - Nat.factorial (n + 1) := by simp_arith
+    rw [t1]
+    apply Nat.dvd_sub'
+    . exact pdvd
+    . exact this
   show False
-  sorry
+  have t2: p = 1 := Nat.dvd_one.mp this
+  have t3: p ≠ 1 := Nat.Prime.ne_one pp
+  contradiction
+
+
 open Finset
 
 section
@@ -119,7 +185,7 @@ example (s : Finset ℕ) (x : ℕ) : x ∈ s.filter Nat.Prime ↔ x ∈ s ∧ x.
 theorem primes_infinite' : ∀ s : Finset Nat, ∃ p, Nat.Prime p ∧ p ∉ s := by
   intro s
   by_contra h
-  push_neg  at h
+  push_neg at h
   set s' := s.filter Nat.Prime with s'_def
   have mem_s' : ∀ {n : ℕ}, n ∈ s' ↔ n.Prime := by
     intro n
@@ -156,15 +222,14 @@ example : 27 % 4 = 3 := by norm_num
 
 example (n : ℕ) : (4 * n + 3) % 4 = 3 := by
   rw [add_comm, Nat.add_mul_mod_self_left]
-  norm_num
 
 theorem mod_4_eq_3_or_mod_4_eq_3 {m n : ℕ} (h : m * n % 4 = 3) : m % 4 = 3 ∨ n % 4 = 3 := by
   revert h
   rw [Nat.mul_mod]
   have : m % 4 < 4 := Nat.mod_lt m (by norm_num)
-  interval_cases hm : m % 4 <;> simp [hm]
+  interval_cases m % 4 <;> simp [-Nat.mul_mod_mod]
   have : n % 4 < 4 := Nat.mod_lt n (by norm_num)
-  interval_cases hn : n % 4 <;> simp [hn]
+  interval_cases n % 4 <;> simp
 
 theorem two_le_of_mod_4_eq_3 {n : ℕ} (h : n % 4 = 3) : 2 ≤ n := by
   apply two_le <;>
@@ -180,7 +245,7 @@ theorem exists_prime_factor_mod_4_eq_3 {n : Nat} (h : n % 4 = 3) :
   · use n
   induction' n using Nat.strong_induction_on with n ih
   rw [Nat.prime_def_lt] at np
-  push_neg  at np
+  push_neg at np
   rcases np (two_le_of_mod_4_eq_3 h) with ⟨m, mltn, mdvdn, mne1⟩
   have mge2 : 2 ≤ m := by
     apply two_le _ mne1
@@ -203,7 +268,7 @@ example (m n : ℕ) (s : Finset ℕ) (h : m ∈ erase s n) : m ≠ n ∧ m ∈ s
 
 theorem primes_mod_4_eq_3_infinite : ∀ n, ∃ p > n, Nat.Prime p ∧ p % 4 = 3 := by
   by_contra h
-  push_neg  at h
+  push_neg at h
   rcases h with ⟨n, hn⟩
   have : ∃ s : Finset Nat, ∀ p : ℕ, p.Prime ∧ p % 4 = 3 ↔ p ∈ s := by
     apply ex_finset_of_bounded
@@ -226,4 +291,3 @@ theorem primes_mod_4_eq_3_infinite : ∀ n, ∃ p > n, Nat.Prime p ∧ p % 4 = 3
   have : p = 3 := by
     sorry
   contradiction
-
