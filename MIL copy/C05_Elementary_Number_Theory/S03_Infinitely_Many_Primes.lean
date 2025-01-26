@@ -129,6 +129,9 @@ open Finset
 section
 variable {α : Type*} [DecidableEq α] (r s t : Finset α)
 
+
+#check mem_inter
+
 example : r ∩ (s ∪ t) ⊆ r ∩ s ∪ r ∩ t := by
   rw [subset_iff]
   intro x
@@ -155,20 +158,44 @@ end
 section
 variable {α : Type*} [DecidableEq α] (r s t : Finset α)
 
+/-
+We have used a new trick: the tauto tactic (and a strengthened version, tauto!, which uses classical logic)
+can be used to dispense with propositional tautologies.
+
+See if you can use these methods to prove the two examples below.
+-/
+
 example : (r ∪ s) ∩ (r ∪ t) = r ∪ s ∩ t := by
-  sorry
+  ext x
+  repeat simp [mem_inter,mem_union]
+  tauto
+
+#check Finset.div_def
+
 example : (r \ s) \ t = r \ (s ∪ t) := by
-  sorry
+  ext x
+  repeat simp [div_def]
+  tauto
 
 end
 
 example (s : Finset ℕ) (n : ℕ) (h : n ∈ s) : n ∣ ∏ i in s, i :=
   Finset.dvd_prod_of_mem _ h
 
+#check Nat.dvd_one.mp
+#check Nat.Prime.dvd_iff_eq
+#check Nat.Prime.two_le
+
 theorem _root_.Nat.Prime.eq_of_dvd_of_prime {p q : ℕ}
       (prime_p : Nat.Prime p) (prime_q : Nat.Prime q) (h : p ∣ q) :
     p = q := by
-  sorry
+    have t1:_ := Nat.Prime.two_le prime_p
+    have t2:_ := Nat.Prime.two_le prime_q
+    have t4: p ≠ 1 := by linarith
+    have t5: q ≠ 1 := by linarith
+    have := (Nat.Prime.dvd_iff_eq prime_q t4).mp h
+    simp [this]
+
 
 theorem mem_of_dvd_prod_primes {s : Finset ℕ} {p : ℕ} (prime_p : p.Prime) :
     (∀ n ∈ s, Nat.Prime n) → (p ∣ ∏ n in s, n) → p ∈ s := by
