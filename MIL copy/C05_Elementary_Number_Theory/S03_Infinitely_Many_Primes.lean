@@ -279,9 +279,9 @@ theorem primes_infinite' : ∀ s : Finset Nat, ∃ p, Nat.Prime p ∧ p ∉ s :=
       calc 2 ≤ 1+1 := by simp_arith
       _ ≤ (∏ i in s', i) + 1 := Nat.add_le_add h₁ (le_refl 1)
     rcases exists_prime_factor this with ⟨p, pp, pdvd⟩
-    have : p ∣ ∏ i in s', i :=
+    have : p ∣ ∏ i in s', i := --since p is prime, it must be in s' and hence divide the product
     by have t₁: p ∈ s' := mem_s'.mpr pp; exact Finset.dvd_prod_of_mem (fun (x:ℕ) ↦ x) t₁
-    have : p ∣ 1 := by
+    have : p ∣ 1 := by --since it divides (∏ i in s', i) + 1 and (∏ i in s', i) it must divide 1
       convert Nat.dvd_sub' pdvd this
       simp
     show False
@@ -289,6 +289,7 @@ theorem primes_infinite' : ∀ s : Finset Nat, ∃ p, Nat.Prime p ∧ p ∉ s :=
     have c₂: p ≥ 2 := Nat.Prime.two_le pp
     linarith
 
+section
 
 theorem bounded_of_ex_finset (Q : ℕ → Prop) :
     (∃ s : Finset ℕ, ∀ k, Q k → k ∈ s) → ∃ n, ∀ k, Q k → k < n := by --if there exists a Finset with all the predicate Q, then there is an n larger that k for any Q k
@@ -326,9 +327,15 @@ theorem two_le_of_mod_4_eq_3 {n : ℕ} (h : n % 4 = 3) : 2 ≤ n := by
     · intro neq
       rw [neq] at h
       norm_num at h
+#check Nat.div_dvd_of_dvd
 
 theorem aux {m n : ℕ} (h₀ : m ∣ n) (h₁ : 2 ≤ m) (h₂ : m < n) : n / m ∣ n ∧ n / m < n := by
-  admit
+  constructor
+  . exact Nat.div_dvd_of_dvd h₀
+  . have := Nat.div_dvd_of_dvd h₀
+    apply Nat.div_lt_self <;> linarith
+
+
 theorem exists_prime_factor_mod_4_eq_3 {n : Nat} (h : n % 4 = 3) :
     ∃ p : Nat, p.Prime ∧ p ∣ n ∧ p % 4 = 3 := by
   by_cases np : n.Prime
@@ -381,3 +388,4 @@ theorem primes_mod_4_eq_3_infinite : ∀ n, ∃ p > n, Nat.Prime p ∧ p % 4 = 3
   have : p = 3 := by
     sorry
   contradiction
+end
