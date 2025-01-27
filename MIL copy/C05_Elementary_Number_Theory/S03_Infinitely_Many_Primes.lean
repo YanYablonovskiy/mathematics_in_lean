@@ -255,25 +255,40 @@ theorem mem_of_dvd_prod_primes' {s : Finset ℕ} {p : ℕ} (prime_p : p.Prime) :
 example (s : Finset ℕ) (x : ℕ) : x ∈ s.filter Nat.Prime ↔ x ∈ s ∧ x.Prime :=
   mem_filter
 
+#check Finset.one_le_prod'
+#check Finset.dvd_prod_of_mem
+#check Nat.Prime.one_le
+#check Nat.add_le_add
+#check Nat.two_pow_succ 0
 theorem primes_infinite' : ∀ s : Finset Nat, ∃ p, Nat.Prime p ∧ p ∉ s := by
-  intro s
+  intro s --Finset of Nat, a list of Naturals
   by_contra h
   push_neg at h
-  set s' := s.filter Nat.Prime with s'_def
+  set s' := s.filter Nat.Prime with s'_def --the set of primes in s
   have mem_s' : ∀ {n : ℕ}, n ∈ s' ↔ n.Prime := by
     intro n
     simp [s'_def]
     apply h
   have : 2 ≤ (∏ i in s', i) + 1 := by
-    sorry
+    have h₁: (1 ≤ ∏ i ∈ s', i) := by
+      apply Finset.one_le_prod'
+      intro i his
+      simp [s'_def] at his
+      exact Nat.Prime.one_le (his.2)
+    calc 2 ≤ 1+1 := by simp_arith
+    _ ≤ (∏ i in s', i) + 1 := Nat.add_le_add h₁ (le_refl 1)
   rcases exists_prime_factor this with ⟨p, pp, pdvd⟩
-  have : p ∣ ∏ i in s', i := by
-    sorry
+  have : p ∣ ∏ i in s', i :=
+   by have t₁: p ∈ s' := mem_s'.mpr pp; exact Finset.dvd_prod_of_mem (fun (x:ℕ) ↦ x) t₁
   have : p ∣ 1 := by
     convert Nat.dvd_sub' pdvd this
     simp
   show False
-  sorry
+  have c₁: p = 1 := Nat.dvd_one.mp this
+  have c₂: p ≥ 2 := Nat.Prime.two_le pp
+  linarith
+
+
 theorem bounded_of_ex_finset (Q : ℕ → Prop) :
     (∃ s : Finset ℕ, ∀ k, Q k → k ∈ s) → ∃ n, ∀ k, Q k → k < n := by
   rintro ⟨s, hs⟩
