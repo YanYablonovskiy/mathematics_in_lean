@@ -1,10 +1,27 @@
-import MIL.Common
+import Mathlib.Tactic
+import Mathlib.Util.Delaborators
 import Mathlib.Algebra.BigOperators.Ring
 import Mathlib.Data.Real.Basic
 
 namespace C06S01
 noncomputable section
 
+
+/-
+Modern mathematics makes essential use of algebraic structures, which encapsulate patterns that can be instantiated in multiple settings.
+
+The subject provides various ways of defining such structures and constructing particular instances.
+
+Lean therefore provides corresponding ways of defining structures formally and working with them.
+
+You have already seen examples of algebraic structures in Lean, such as rings
+and lattices, which were discussed in Chapter 2.
+
+This chapter will explain the mysterious square bracket annotations that you saw there,
+[Ring α] and [Lattice α].
+
+It will also show you how to define and use algebraic structures on your own.
+-/
 @[ext]
 structure Point where
   x : ℝ
@@ -12,7 +29,12 @@ structure Point where
   z : ℝ
 
 #check Point.ext
+/-
+The @[ext] annotation tells Lean to automatically generate theorems that can be used to prove that two instances *of a structure are equal when their components are equal,
+a property known as extensionality.
 
+here this is a hardcoded instance of point for type ℝ
+-/
 example (a b : Point) (hx : a.x = b.x) (hy : a.y = b.y) (hz : a.z = b.z) : a = b := by
   ext
   repeat' assumption
@@ -28,7 +50,10 @@ def myPoint2 : Point :=
 def myPoint3 :=
   Point.mk 2 (-1) 4
 
-structure Point' where build ::
+--another way
+def myPoint4: Point := {x := 2, y:= -1,z:=4}
+
+structure Point' where build :: --name the constructor
   x : ℝ
   y : ℝ
   z : ℝ
@@ -81,14 +106,19 @@ theorem addAlt_comm (a b : Point) : addAlt a b = addAlt b a := by
   repeat' apply add_comm
 
 protected theorem add_assoc (a b c : Point) : (a.add b).add c = a.add (b.add c) := by
-  sorry
+  dsimp [add]
+  ext
+  repeat simp [add_assoc]
 
 def smul (r : ℝ) (a : Point) : Point :=
-  sorry
+  match a with
+  | p => Point.mk (r*(p.x)) (r*(p.y)) (r*(p.z))
 
 theorem smul_distrib (r : ℝ) (a b : Point) :
     (smul r a).add (smul r b) = smul r (a.add b) := by
-  sorry
+  dsimp [add,smul]
+  ext
+  repeat simp [mul_add,add_mul]
 
 end Point
 
@@ -206,4 +236,3 @@ variable (s : StdSimplex)
 #check s.2
 
 end
-
