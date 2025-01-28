@@ -335,11 +335,12 @@ theorem aux {m n : ℕ} (h₀ : m ∣ n) (h₁ : 2 ≤ m) (h₂ : m < n) : n / m
   . have := Nat.div_dvd_of_dvd h₀
     apply Nat.div_lt_self <;> linarith
 
-
+#check Nat.div_lt_self
 theorem exists_prime_factor_mod_4_eq_3 {n : Nat} (h : n % 4 = 3) :
     ∃ p : Nat, p.Prime ∧ p ∣ n ∧ p % 4 = 3 := by
-  by_cases np : n.Prime
+  by_cases np : n.Prime --if n is prime, use n and we are done
   · use n
+  --given n is not prime, strong induction on n
   induction' n using Nat.strong_induction_on with n ih
   rw [Nat.prime_def_lt] at np
   push_neg at np
@@ -354,8 +355,34 @@ theorem exists_prime_factor_mod_4_eq_3 {n : Nat} (h : n % 4 = 3) :
     apply mod_4_eq_3_or_mod_4_eq_3
     rw [neq, h]
   rcases this with h1 | h1
-  . sorry
-  . sorry
+  . by_cases nm: Nat.Prime m
+    . use m
+    . have := ih m mltn h1 nm
+      rcases this with ⟨p,hp⟩
+      use p
+      have := dvd_trans hp.2.1 mdvdn
+      exact ⟨hp.1,this,hp.2.2⟩
+  . let k:= n / m
+    by_cases npk: Nat.Prime k
+    . use k
+      constructor
+      . exact npk
+      constructor
+      . simp [k]
+        use m
+        rw [mul_comm]
+        simp [neq]
+      . simp [h1]
+    . have := ih k (by simp [k];apply Nat.div_lt_self<;>linarith) (by simp [h1]) npk
+      rcases this with ⟨p,hp⟩
+      use p
+      constructor
+      . exact hp.1
+      . constructor
+        . have: k ∣ n := by simp [k]; exact (aux mdvdn mge2 mltn).1
+          exact dvd_trans hp.2.1 this
+        . exact hp.2.2
+
 example (m n : ℕ) (s : Finset ℕ) (h : m ∈ erase s n) : m ≠ n ∧ m ∈ s := by
   rwa [mem_erase] at h
 
