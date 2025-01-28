@@ -144,7 +144,8 @@ def swapXy (a : StandardTwoSimplex) : StandardTwoSimplex
   sum_eq := by rw [add_comm a.y a.x, a.sum_eq]
 
 noncomputable section
-
+#check add_nonneg
+#check mul_nonneg
 def midpoint (a b : StandardTwoSimplex) : StandardTwoSimplex
     where
   x := (a.x + b.x) / 2
@@ -157,7 +158,37 @@ def midpoint (a b : StandardTwoSimplex) : StandardTwoSimplex
 
 def weightedAverage (lambda : Real) (lambda_nonneg : 0 ≤ lambda) (lambda_le : lambda ≤ 1)
     (a b : StandardTwoSimplex) : StandardTwoSimplex :=
-  sorry
+  {x := lambda*(a.x) + (1-lambda)*(b.x),
+   y :=  lambda*(a.y) + (1-lambda)*(b.y),
+   z := lambda*(a.z) + (1-lambda)*(b.z)
+   x_nonneg := by
+    have p1:_ := a.x_nonneg
+    have p2:_ := b.x_nonneg
+    have p3:(1 - lambda) ≥ 0 := by simp; exact lambda_le
+    apply add_nonneg
+    . exact mul_nonneg lambda_nonneg p1
+    . exact mul_nonneg p3 p2
+   y_nonneg := by
+    have p1:_ := a.y_nonneg
+    have p2:_ := b.y_nonneg
+    have p3:(1 - lambda) ≥ 0 := by simp; exact lambda_le
+    apply add_nonneg
+    . exact mul_nonneg lambda_nonneg p1
+    . exact mul_nonneg p3 p2
+   z_nonneg := by
+    have p1:_ := a.z_nonneg
+    have p2:_ := b.z_nonneg
+    have p3:(1 - lambda) ≥ 0 := by simp; exact lambda_le
+    apply add_nonneg
+    . exact mul_nonneg lambda_nonneg p1
+    . exact mul_nonneg p3 p2,
+   sum_eq := by
+    have: lambda * a.x + (1 - lambda) * b.x + (lambda * a.y + (1 - lambda) * b.y) + (lambda * a.z + (1 - lambda) * b.z) = lambda*(a.x + a.y + a.z - (b.x + b.y + b.z)) + (b.x + b.y + b.z) := by
+     ring
+    rw [this]
+    rw [a.sum_eq,b.sum_eq]
+    simp
+    ;}
 
 end
 
