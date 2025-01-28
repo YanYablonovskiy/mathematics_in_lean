@@ -389,12 +389,26 @@ example (m n : ℕ) (s : Finset ℕ) (h : m ∈ erase s n) : m ≠ n ∧ m ∈ s
 example (m n : ℕ) (s : Finset ℕ) (h : m ∈ erase s n) : m ≠ n ∧ m ∈ s := by
   simp at h
   assumption
-
+#check Finset.prod_insert
+#check Nat.add_mod
+#check Nat.mod_mul_mod
+#check Nat.mul_left_comm
+#check Nat.mod_self
+#check Nat.dvd_add_iff_left
+#check Nat.mul_mod
+#check Nat.mul_mod_left
+#check Nat.dvd_add_iff_left --we have k | m + n
+#check Nat.Prime.dvd_mul
+#check mem_of_dvd_prod_primes -- (∀ n ∈ s, Nat.Prime n) → p ∣ ∏ n ∈ s, n → p ∈ s
+--#check Nat.dvd_mod
+#check Nat.dvd_sub'
+#check Finset.dvd_prod_of_mem
+#check Nat.Prime.dvd_mul
 theorem primes_mod_4_eq_3_infinite : ∀ n, ∃ p > n, Nat.Prime p ∧ p % 4 = 3 := by
   by_contra h
   push_neg at h
   rcases h with ⟨n, hn⟩
-  have : ∃ s : Finset Nat, ∀ p : ℕ, p.Prime ∧ p % 4 = 3 ↔ p ∈ s := by
+  have : ∃ s : Finset Nat, ∀ p : ℕ, p.Prime ∧ p % 4 = 3 ↔ p ∈ s := by --creating the finset of all such primes
     apply ex_finset_of_bounded
     use n
     contrapose! hn
@@ -402,17 +416,57 @@ theorem primes_mod_4_eq_3_infinite : ∀ n, ∃ p > n, Nat.Prime p ∧ p % 4 = 3
     exact ⟨p, pltn, pp, p4⟩
   rcases this with ⟨s, hs⟩
   have h₁ : ((4 * ∏ i in erase s 3, i) + 3) % 4 = 3 := by
-    sorry
+    induction' (erase s 3) using Finset.induction_on with s h1 h2 ih
+    . simp
+    . rw [Finset.prod_insert]
+      rw [←mul_assoc,mul_comm 4]
+      rw [mul_assoc,Nat.add_mod]
+      rw [Nat.mul_mod]
+      have : s % 4 < 4 := Nat.mod_lt s (by norm_num)
+      interval_cases s%4 <;> simp
+      exact h2
   rcases exists_prime_factor_mod_4_eq_3 h₁ with ⟨p, pp, pdvd, p4eq⟩
   have ps : p ∈ s := by
-    sorry
+    exact (hs p).mp (And.intro pp p4eq)
   have pne3 : p ≠ 3 := by
-    sorry
+    intro peq3
+    rw [peq3] at pdvd
+    have t0:3 ∣ 3 := by simp
+    have t1:_ := (Nat.dvd_add_iff_left t0 (n:=3) (m:=4 * ∏ i ∈ s.erase 3, i)).mpr pdvd
+    have t2:_ := (Nat.Prime.dvd_mul (Nat.prime_three)).mp t1
+    apply t2.elim
+    . intro hc; contradiction
+    . have t3: ∀n ∈ s.erase 3, Nat.Prime n := by
+       intro n nis
+       rw [Finset.mem_erase] at nis
+       exact ((hs n).mpr nis.2).1
+      have t4:_ := mem_of_dvd_prod_primes (Nat.prime_three) t3
+      intro k
+      have := t4 k
+      rw [Finset.mem_erase] at this
+      exact this.1 (Eq.refl 3)
   have : p ∣ 4 * ∏ i in erase s 3, i := by
-    sorry
+    have hps: p ∈ erase s 3 := by
+     rw [Finset.mem_erase]
+     exact And.intro pne3 ps
+    have t5:_ := Finset.dvd_prod_of_mem (id) (s:=erase s 3) hps (β:=Nat)
+    simp at t5
+    have t6:_ := (Nat.Prime.dvd_mul pp (m:=4) (n:= ∏ i ∈ s.erase 3, i)).mpr
+    exact t6 (Or.inr t5)
   have : p ∣ 3 := by
-    sorry
+    have t7:3 = 4 * ∏ i ∈ s.erase 3, i + 3 - 4 * ∏ i ∈ s.erase 3, i := by simp
+    rw [t7]
+    apply Nat.dvd_sub' (m:=4 * ∏ i ∈ s.erase 3, i + 3) (n:=4 * ∏ i ∈ s.erase 3, i)
+    . exact pdvd
+    . exact this
   have : p = 3 := by
-    sorry
+    apply _root_.Nat.Prime.eq_of_dvd_of_prime
+    . exact pp
+    . exact Nat.prime_three
+    . exact this
   contradiction
+
+#check mem_of_dvd_prod_primes
+#check Nat.dvd_sub'
+#check _root_.Nat.Prime.eq_of_dvd_of_prime
 end
