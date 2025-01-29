@@ -218,7 +218,7 @@ def midpoint (n : ℕ) (a b : StandardSimplex n) : StandardSimplex n
 
 end StandardSimplex
 
-structure IsLinear (f : ℝ → ℝ) where
+structure IsLinear (f : ℝ → ℝ) where --can be a class with different types (given an add and mul instance)
   is_additive : ∀ x y, f (x + y) = f x + f y
   preserves_mul : ∀ x c, f (c * x) = c * f x
 
