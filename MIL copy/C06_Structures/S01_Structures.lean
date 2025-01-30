@@ -196,6 +196,20 @@ end StandardTwoSimplex
 
 open BigOperators
 
+
+/-
+Structures can depend on parameters.
+
+For example, we can generalize the standard 2-simplex to the standard-simplex for any n.
+
+At this stage, you don’t have to know anything about the type Fin n except that it has
+elements, and that Lean knows how to sum over it.
+-/
+
+#check Fin
+#check (Fin)
+#print Fin
+#check Fin.partialSum
 structure StandardSimplex (n : ℕ) where
   V : Fin n → ℝ
   NonNeg : ∀ i : Fin n, 0 ≤ V i
@@ -205,7 +219,7 @@ namespace StandardSimplex
 
 def midpoint (n : ℕ) (a b : StandardSimplex n) : StandardSimplex n
     where
-  V i := (a.V i + b.V i) / 2
+  V i := (a.V i + b.V i) / 2 --i is in Fin n
   NonNeg := by
     intro i
     apply div_nonneg
@@ -216,8 +230,45 @@ def midpoint (n : ℕ) (a b : StandardSimplex n) : StandardSimplex n
       a.sum_eq_one, b.sum_eq_one]
     field_simp
 
+/-
+As an exercise, see if you can define the weighted average of two points in the standard
+-simplex. You can use Finset.sum_add_distrib and Finset.mul_sum to manipulate the relevant sums.
+-/
+
+#check Fin.sum_univ_succ
+#check Fin.succ
+#check Fin.sum_univ_add
+#check Finset.sum_add_distrib
+#check add_nonneg
+#check Fin.sum_univ_castSucc
+#check Finset.sum_nonneg
+#check Finset.sum_mul
+#check Fin.mul_comm
+#check Finset.equivFin
+
+def weightedAverage (n: ℕ) (hne1: n ≠ 0) (lambda: Fin n → ℝ) (hpos: ∀i:Fin n, lambda i ≥ 0) (hle1: ∀i:Fin n, lambda i ≤ 1) (hsumeq1: (∑ i:Fin n, lambda i) = 1)
+    (simplexes: Fin n → StandardSimplex n) : StandardSimplex n where
+  V i := ∑ j:Fin n, ((simplexes j).V i)*(lambda j)
+  NonNeg := by
+   intro i
+   dsimp
+   apply Finset.sum_nonneg
+   . intro j hj
+     apply mul_nonneg
+     . exact (simplexes j).NonNeg i
+     . exact hpos j
+  sum_eq_one := by admit
+
 end StandardSimplex
 
+
+/-
+We have seen that structures can be used to bundle together data and properties.
+
+Interestingly, they can also be used to bundle together properties without the data.
+
+For example, the next structure, IsLinear, bundles together the two components of linearity.
+-/
 structure IsLinear (f : ℝ → ℝ) where --can be a class with different types (given an add and mul instance)
   is_additive : ∀ x y, f (x + y) = f x + f y
   preserves_mul : ∀ x c, f (c * x) = c * f x
@@ -229,12 +280,30 @@ variable (f : ℝ → ℝ) (linf : IsLinear f)
 #check linf.preserves_mul
 
 end
+/-
+It is worth pointing out that structures are not the only way to bundle together data.
 
+The Point data structure can be defined using the generic type product, and IsLinear can be defined with a simple and.
+-/
 def Point'' :=
   ℝ × ℝ × ℝ
 
 def IsLinear' (f : ℝ → ℝ) :=
   (∀ x y, f (x + y) = f x + f y) ∧ ∀ x c, f (c * x) = c * f x
+
+/-
+Generic type constructions can even be used in place of structures with dependencies between their components.
+
+For example, the subtype construction combines a piece of data with a property.
+
+You can think of the type PReal in the next example as being the type of positive real numbers.
+
+Any x : PReal has two components: the value, and the property of being positive.
+
+You can access these components as x.val, which has type ℝ, and x.property,
+which represents the fact 0 < x.val.
+-/
+
 
 def PReal :=
   { y : ℝ // 0 < y }
@@ -248,13 +317,19 @@ variable (x : PReal)
 #check x.2
 
 end
+/-
+We could have used subtypes to define the standard 2-simplex, as well as the standard
+-simplex for an arbitrary n.
+-/
 
 def StandardTwoSimplex' :=
   { p : ℝ × ℝ × ℝ // 0 ≤ p.1 ∧ 0 ≤ p.2.1 ∧ 0 ≤ p.2.2 ∧ p.1 + p.2.1 + p.2.2 = 1 }
 
 def StandardSimplex' (n : ℕ) :=
   { v : Fin n → ℝ // (∀ i : Fin n, 0 ≤ v i) ∧ (∑ i, v i) = 1 }
-
+/-
+Similarly, Sigma types are generalizations of ordered pairs, whereby the type of the second component depends on the type of the first.
+-/
 def StdSimplex := Σ n : ℕ, StandardSimplex n
 
 section
@@ -265,5 +340,20 @@ variable (s : StdSimplex)
 
 #check s.1
 #check s.2
+/-
+Given s : StdSimplex, the first component s.fst is a natural number, and the second component is an element of the corresponding simplex StandardSimplex s.fst.
 
+The difference between a Sigma type and a subtype is that the second component of a Sigma type is data rather than a proposition.
+
+But even though we can use products, subtypes, and Sigma types instead of structures, using structures has a number of advantages.
+
+Defining a structure abstracts away the underlying representation and provides custom names for the functions that access the components.
+
+This makes proofs more robust: proofs that rely only on the interface to a structure will generally continue to work when we change the definition,
+as long as we redefine the old accessors in terms of the new definition.
+
+Moreover, as we are about to see, Lean provides support for weaving structures together into a rich, interconnected hierarchy,
+and for managing the interactions between them.
+
+-/
 end
