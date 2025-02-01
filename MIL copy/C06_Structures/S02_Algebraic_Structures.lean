@@ -116,6 +116,14 @@ example (α : Type*) : Equiv.Perm α = (α ≃ α) :=
   rfl
 
 
+variable (α: Type*)
+#check Equiv.refl α
+#check @Function.id_def α
+
+--shows its the identity
+example (α : Type*) :  (Equiv.refl α).toFun = fun x => x :=
+  rfl
+
 
 /-
 It should be clear that Equiv.Perm α forms a group under composition of equivalences.
@@ -126,12 +134,14 @@ In other words, multiplication is what we ordinarily think of as composition of 
 
 Here we define this group:
 -/
+#check Equiv.symm
+#check Equiv.mk
 def permGroup {α : Type*} : Group₁ (Equiv.Perm α)
     where
   mul f g := Equiv.trans g f --composition (always compatible since α → α)
-  one := Equiv.refl α --one is just  identity map?
-  inv := Equiv.symm --automatically coerces to function?
-  mul_assoc f g h := (Equiv.trans_assoc _ _ _).symm
+  one := Equiv.refl α --one is just  identity map
+  inv := Equiv.symm --automatically coerces to function? can be defined as  Equiv.invFun as Fun and vice versa
+  mul_assoc f g h := (Equiv.trans_assoc _ _ _).symm --by dsimp; apply Equiv.trans_assoc
   one_mul := Equiv.trans_refl
   mul_one := Equiv.refl_trans
   inv_mul_cancel := Equiv.self_trans_symm
