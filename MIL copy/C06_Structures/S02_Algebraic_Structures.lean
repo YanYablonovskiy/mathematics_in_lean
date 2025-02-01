@@ -148,6 +148,14 @@ def permGroup {α : Type*} : Group₁ (Equiv.Perm α)
 
 structure AddGroup₁ (α : Type*) where
   (add : α → α → α)
+  (zero: α)
+  (neg: α → α)
+  (zero_add := ∀a:α,add a zero = a)
+  (add_zero := ∀a:α,add zero a = a)
+  (neg_add_cancel := ∀a:α,add a (neg a) = zero)
+  (add_assoc := ∀(a b c:α),add a (add b c) = add (add a b) c)
+
+
   -- fill in the rest
 @[ext]
 structure Point where
