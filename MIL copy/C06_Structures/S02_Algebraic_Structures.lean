@@ -150,10 +150,10 @@ structure AddGroup₁ (α : Type*) where
   (add : α → α → α)
   (zero: α)
   (neg: α → α)
-  (zero_add := ∀a:α,add a zero = a)
-  (add_zero := ∀a:α,add zero a = a)
-  (neg_add_cancel := ∀a:α,add a (neg a) = zero)
-  (add_assoc := ∀(a b c:α),add a (add b c) = add (add a b) c)
+  (zero_add : ∀a:α,add a zero = a)
+  (add_zero : ∀a:α,add zero a = a)
+  (neg_add_cancel : ∀a:α,add a (neg a) = zero)
+  (add_assoc : ∀(a b c:α),add a (add b c) = add (add a b) c)
 
 
   -- fill in the rest
@@ -168,12 +168,28 @@ namespace Point
 def add (a b : Point) : Point :=
   ⟨a.x + b.x, a.y + b.y, a.z + b.z⟩
 
-def neg (a : Point) : Point := sorry
+def neg (a : Point) : Point := {x := -a.x,y := -a.y, z := -a.z}
 
-def zero : Point := sorry
+def zero : Point := ⟨0,0,0⟩
 
-def addGroupPoint : AddGroup₁ Point := sorry
-
+def addGroupPoint : AddGroup₁ Point :=
+{
+  add := add
+  zero := zero
+  neg := neg
+  zero_add := by
+   intro a
+   simp [add,zero]
+  add_zero := by
+   intro a
+   simp [zero,add]
+  neg_add_cancel := by
+   intro a
+   simp [add,neg,zero]
+  add_assoc := by
+   intro a b c
+   simp [add,add_assoc]
+}
 end Point
 
 section
