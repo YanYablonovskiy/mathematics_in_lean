@@ -327,6 +327,7 @@ Then show Point is an instance of AddGroup₂.
 
 Try it out and make sure that the additive group notation works for elements of Point.
 -/
+@[ext]
 class AddGroup₂ (α : Type*) where
   add : α → α → α
   -- fill in the rest
