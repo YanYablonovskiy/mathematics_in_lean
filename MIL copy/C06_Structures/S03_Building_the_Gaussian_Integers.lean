@@ -1,92 +1,130 @@
-import Mathlib.Data.Int.Basic
 import Mathlib.Algebra.EuclideanDomain.Basic
 import Mathlib.RingTheory.PrincipalIdealDomain
-import MIL.Common
+import Mathlib.Tactic
+import Mathlib.Util.Delaborators
 
 @[ext]
-structure gaussInt where
+structure GaussInt where
   re : ℤ
   im : ℤ
 
-namespace gaussInt
+namespace GaussInt
 
-instance : Zero gaussInt :=
+instance : Zero GaussInt :=
   ⟨⟨0, 0⟩⟩
 
-instance : One gaussInt :=
+instance : One GaussInt :=
   ⟨⟨1, 0⟩⟩
 
-instance : Add gaussInt :=
+instance : Add GaussInt :=
   ⟨fun x y ↦ ⟨x.re + y.re, x.im + y.im⟩⟩
 
-instance : Neg gaussInt :=
+instance : Neg GaussInt :=
   ⟨fun x ↦ ⟨-x.re, -x.im⟩⟩
 
-instance : Mul gaussInt :=
+instance : Mul GaussInt :=
   ⟨fun x y ↦ ⟨x.re * y.re - x.im * y.im, x.re * y.im + x.im * y.re⟩⟩
 
-theorem zero_def : (0 : gaussInt) = ⟨0, 0⟩ :=
+/-
+As noted in Section 6.1, it is a good idea to put all the definitions related to a data type in a namespace with the same name.
+
+Thus in the Lean files associated with this chapter, these definitions are made in the GaussInt namespace.
+
+Notice that here we are defining the interpretations of the notation 0, 1, +, -, and * directly,
+rather than naming them GaussInt.zero and the like and assigning the notation to those.
+
+It is often useful to have an explicit name for the definitions, for example, to use with simp and rewrite.
+-/
+
+
+theorem zero_def : (0 : GaussInt) = ⟨0, 0⟩ :=
   rfl
 
-theorem one_def : (1 : gaussInt) = ⟨1, 0⟩ :=
+theorem one_def : (1 : GaussInt) = ⟨1, 0⟩ :=
   rfl
 
-theorem add_def (x y : gaussInt) : x + y = ⟨x.re + y.re, x.im + y.im⟩ :=
+theorem add_def (x y : GaussInt) : x + y = ⟨x.re + y.re, x.im + y.im⟩ :=
   rfl
 
-theorem neg_def (x : gaussInt) : -x = ⟨-x.re, -x.im⟩ :=
+theorem neg_def (x : GaussInt) : -x = ⟨-x.re, -x.im⟩ :=
   rfl
 
-theorem mul_def (x y : gaussInt) :
+theorem mul_def (x y : GaussInt) :
     x * y = ⟨x.re * y.re - x.im * y.im, x.re * y.im + x.im * y.re⟩ :=
   rfl
 
 @[simp]
-theorem zero_re : (0 : gaussInt).re = 0 :=
+theorem zero_re : (0 : GaussInt).re = 0 :=
   rfl
 
 @[simp]
-theorem zero_im : (0 : gaussInt).im = 0 :=
+theorem zero_im : (0 : GaussInt).im = 0 :=
   rfl
 
 @[simp]
-theorem one_re : (1 : gaussInt).re = 1 :=
+theorem one_re : (1 : GaussInt).re = 1 :=
   rfl
 
 @[simp]
-theorem one_im : (1 : gaussInt).im = 0 :=
+theorem one_im : (1 : GaussInt).im = 0 :=
   rfl
 
 @[simp]
-theorem add_re (x y : gaussInt) : (x + y).re = x.re + y.re :=
+theorem add_re (x y : GaussInt) : (x + y).re = x.re + y.re :=
   rfl
 
 @[simp]
-theorem add_im (x y : gaussInt) : (x + y).im = x.im + y.im :=
+theorem add_im (x y : GaussInt) : (x + y).im = x.im + y.im :=
   rfl
 
 @[simp]
-theorem neg_re (x : gaussInt) : (-x).re = -x.re :=
+theorem neg_re (x : GaussInt) : (-x).re = -x.re :=
   rfl
 
 @[simp]
-theorem neg_im (x : gaussInt) : (-x).im = -x.im :=
+theorem neg_im (x : GaussInt) : (-x).im = -x.im :=
   rfl
 
 @[simp]
-theorem mul_re (x y : gaussInt) : (x * y).re = x.re * y.re - x.im * y.im :=
+theorem mul_re (x y : GaussInt) : (x * y).re = x.re * y.re - x.im * y.im :=
   rfl
 
 @[simp]
-theorem mul_im (x y : gaussInt) : (x * y).im = x.re * y.im + x.im * y.re :=
+theorem mul_im (x y : GaussInt) : (x * y).im = x.re * y.im + x.im * y.re :=
   rfl
+/-
+It is now surprisingly easy to show that the Gaussian integers are an instance of a commutative ring.
 
-instance instCommRing : CommRing gaussInt where
+We are putting the structure concept to good use. Each particular Gaussian integer is an instance of the GaussInt structure,
+whereas the type GaussInt itself, together with the relevant operations, is an instance of the CommRing structure.
+
+The CommRing structure, in turn, extends the notational structures Zero, One, Add, Neg, and Mul.
+
+If you type instance : CommRing GaussInt := _, click on the light bulb that appears in VS Code,
+and then ask Lean to fill in a skeleton for the structure definition, you will see a scary number of entries.
+
+Jumping to the definition of the structure, however, shows that many of the fields have default definitions
+that Lean will fill in for you automatically.
+
+The essential ones appear in the definition below.
+
+A special case are nsmul and zsmul which should be ignored for now and will be explained in the next chapter.
+
+In each case, the relevant identity is proved by unfolding definitions, using the ext tactic to reduce the
+identities to their real and imaginary components, simplifying, and, if necessary,
+carrying out the relevant ring calculation in the integers.
+
+Note that we could easily avoid repeating all this code, but this is not the topic of the current discussion.
+
+-/
+instance instCommRing : CommRing GaussInt where
   zero := 0
   one := 1
   add := (· + ·)
   neg x := -x
   mul := (· * ·)
+  nsmul := nsmulRec
+  zsmul := zsmulRec
   add_assoc := by
     intros
     ext <;> simp <;> ring
@@ -96,7 +134,7 @@ instance instCommRing : CommRing gaussInt where
   add_zero := by
     intro
     ext <;> simp
-  add_left_neg := by
+  neg_add_cancel := by
     intro
     ext <;> simp
   add_comm := by
@@ -120,23 +158,27 @@ instance instCommRing : CommRing gaussInt where
   mul_comm := by
     intros
     ext <;> simp <;> ring
-  zero_mul := sorry
-  mul_zero := sorry
+  zero_mul := by
+    intros
+    ext <;> simp
+  mul_zero := by
+    intros
+    ext <;> simp
 
 @[simp]
-theorem sub_re (x y : gaussInt) : (x - y).re = x.re - y.re :=
+theorem sub_re (x y : GaussInt) : (x - y).re = x.re - y.re :=
   rfl
 
 @[simp]
-theorem sub_im (x y : gaussInt) : (x - y).im = x.im - y.im :=
+theorem sub_im (x y : GaussInt) : (x - y).im = x.im - y.im :=
   rfl
 
-instance : Nontrivial gaussInt := by
+instance : Nontrivial GaussInt := by
   use 0, 1
-  rw [Ne, gaussInt.ext_iff]
+  rw [Ne, GaussInt.ext_iff]
   simp
 
-end gaussInt
+end GaussInt
 
 example (a b : ℤ) : a = b * (a / b) + a % b :=
   Eq.symm (Int.ediv_add_emod a b)
@@ -166,57 +208,82 @@ theorem abs_mod'_le (a b : ℤ) (h : 0 < b) : |mod' a b| ≤ b / 2 := by
   have := Int.emod_lt_of_pos (a + b / 2) h
   have := Int.ediv_add_emod b 2
   have := Int.emod_lt_of_pos b zero_lt_two
-  revert this; intro this -- FIXME, this should not be needed
   linarith
 
 theorem mod'_eq (a b : ℤ) : mod' a b = a - b * div' a b := by linarith [div'_add_mod' a b]
 
 end Int
-
+#check sq_pos_iff
+#check sq_nonneg
+#check add_lt_add_of_lt_of_le
+#check lt_irrefl
 theorem sq_add_sq_eq_zero {α : Type*} [LinearOrderedRing α] (x y : α) :
     x ^ 2 + y ^ 2 = 0 ↔ x = 0 ∧ y = 0 := by
-  sorry
-namespace gaussInt
+  constructor
+  .contrapose!
+   intro hxe0
+   by_cases h: x = 0
+   . have yneq0:_ := hxe0 h
+     have := sq_pos_iff.mpr yneq0
+     have xsq0: x^2 = 0 := by simp [h]
+     rw [xsq0]
+     simp [yneq0]
+   . have xsqpos:_ := sq_pos_iff.mpr h
+     have ysqnoneg:_ := sq_nonneg y
+     intro h
+     have: x^2 + y^2 > 0+0 := by
+      apply add_lt_add_of_lt_of_le (a:= 0) (c:=0)
+      . exact xsqpos
+      . exact ysqnoneg
+     simp at this
+     rw [h] at this
+     exact lt_irrefl _ this
+  . rintro ⟨xsq0,ysq0⟩
+    repeat (first|rw [pow_two]|rw [xsq0]|rw [ysq0]|simp_arith)
 
-def norm (x : gaussInt) :=
+
+
+namespace GaussInt
+
+def norm (x : GaussInt) :=
   x.re ^ 2 + x.im ^ 2
 
 @[simp]
-theorem norm_nonneg (x : gaussInt) : 0 ≤ norm x := by
+theorem norm_nonneg (x : GaussInt) : 0 ≤ norm x := by
   sorry
-theorem norm_eq_zero (x : gaussInt) : norm x = 0 ↔ x = 0 := by
+theorem norm_eq_zero (x : GaussInt) : norm x = 0 ↔ x = 0 := by
   sorry
-theorem norm_pos (x : gaussInt) : 0 < norm x ↔ x ≠ 0 := by
+theorem norm_pos (x : GaussInt) : 0 < norm x ↔ x ≠ 0 := by
   sorry
-theorem norm_mul (x y : gaussInt) : norm (x * y) = norm x * norm y := by
+theorem norm_mul (x y : GaussInt) : norm (x * y) = norm x * norm y := by
   sorry
-def conj (x : gaussInt) : gaussInt :=
+def conj (x : GaussInt) : GaussInt :=
   ⟨x.re, -x.im⟩
 
 @[simp]
-theorem conj_re (x : gaussInt) : (conj x).re = x.re :=
+theorem conj_re (x : GaussInt) : (conj x).re = x.re :=
   rfl
 
 @[simp]
-theorem conj_im (x : gaussInt) : (conj x).im = -x.im :=
+theorem conj_im (x : GaussInt) : (conj x).im = -x.im :=
   rfl
 
-theorem norm_conj (x : gaussInt) : norm (conj x) = norm x := by simp [norm]
+theorem norm_conj (x : GaussInt) : norm (conj x) = norm x := by simp [norm]
 
-instance : Div gaussInt :=
+instance : Div GaussInt :=
   ⟨fun x y ↦ ⟨Int.div' (x * conj y).re (norm y), Int.div' (x * conj y).im (norm y)⟩⟩
 
-instance : Mod gaussInt :=
+instance : Mod GaussInt :=
   ⟨fun x y ↦ x - y * (x / y)⟩
 
-theorem div_def (x y : gaussInt) :
+theorem div_def (x y : GaussInt) :
     x / y = ⟨Int.div' (x * conj y).re (norm y), Int.div' (x * conj y).im (norm y)⟩ :=
   rfl
 
-theorem mod_def (x y : gaussInt) : x % y = x - y * (x / y) :=
+theorem mod_def (x y : GaussInt) : x % y = x - y * (x / y) :=
   rfl
 
-theorem norm_mod_lt (x : gaussInt) {y : gaussInt} (hy : y ≠ 0) :
+theorem norm_mod_lt (x : GaussInt) {y : GaussInt} (hy : y ≠ 0) :
     (x % y).norm < y.norm := by
   have norm_y_pos : 0 < norm y := by rwa [norm_pos]
   have H1 : x % y * conj y = ⟨Int.mod' (x * conj y).re (norm y), Int.mod' (x * conj y).im (norm y)⟩
@@ -235,16 +302,16 @@ theorem norm_mod_lt (x : gaussInt) {y : gaussInt} (hy : y ≠ 0) :
         · norm_num
         · linarith
 
-theorem coe_natAbs_norm (x : gaussInt) : (x.norm.natAbs : ℤ) = x.norm :=
+theorem coe_natAbs_norm (x : GaussInt) : (x.norm.natAbs : ℤ) = x.norm :=
   Int.natAbs_of_nonneg (norm_nonneg _)
 
-theorem natAbs_norm_mod_lt (x y : gaussInt) (hy : y ≠ 0) :
+theorem natAbs_norm_mod_lt (x y : GaussInt) (hy : y ≠ 0) :
     (x % y).norm.natAbs < y.norm.natAbs := by
   apply Int.ofNat_lt.1
-  simp only [Int.coe_natAbs, abs_of_nonneg, norm_nonneg]
-  apply norm_mod_lt x hy
+  simp only [Int.natCast_natAbs, abs_of_nonneg, norm_nonneg]
+  exact norm_mod_lt x hy
 
-theorem not_norm_mul_left_lt_norm (x : gaussInt) {y : gaussInt} (hy : y ≠ 0) :
+theorem not_norm_mul_left_lt_norm (x : GaussInt) {y : GaussInt} (hy : y ≠ 0) :
     ¬(norm (x * y)).natAbs < (norm x).natAbs := by
   apply not_lt_of_ge
   rw [norm_mul, Int.natAbs_mul]
@@ -253,12 +320,12 @@ theorem not_norm_mul_left_lt_norm (x : gaussInt) {y : gaussInt} (hy : y ≠ 0) :
   rw [coe_natAbs_norm]
   exact Int.add_one_le_of_lt ((norm_pos _).mpr hy)
 
-instance : EuclideanDomain gaussInt :=
-  { gaussInt.instCommRing with
+instance : EuclideanDomain GaussInt :=
+  { GaussInt.instCommRing with
     quotient := (· / ·)
     remainder := (· % ·)
     quotient_mul_add_remainder_eq :=
-      fun x y ↦ by simp only; rw [mod_def, add_comm, sub_add_cancel]
+      fun x y ↦ by simp only; rw [mod_def, add_comm] ; ring
     quotient_zero := fun x ↦ by
       simp [div_def, norm, Int.div']
       rfl
@@ -267,7 +334,7 @@ instance : EuclideanDomain gaussInt :=
     remainder_lt := natAbs_norm_mod_lt
     mul_left_not_lt := not_norm_mul_left_lt_norm }
 
-example (x : gaussInt) : Irreducible x ↔ Prime x :=
-  PrincipalIdealRing.irreducible_iff_prime
+example (x : GaussInt) : Irreducible x ↔ Prime x :=
+  irreducible_iff_prime
 
-end gaussInt
+end GaussInt
