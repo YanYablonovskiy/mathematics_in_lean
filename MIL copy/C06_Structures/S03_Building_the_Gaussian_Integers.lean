@@ -317,7 +317,11 @@ theorem norm_pos (x : GaussInt) : 0 < norm x ↔ x ≠ 0 := by
     exact h this
 
 theorem norm_mul (x y : GaussInt) : norm (x * y) = norm x * norm y := by
-  sorry
+  repeat rw [norm]
+  repeat rw [mul_def]
+  ring
+
+
 def conj (x : GaussInt) : GaussInt :=
   ⟨x.re, -x.im⟩
 
