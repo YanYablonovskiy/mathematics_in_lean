@@ -40,6 +40,7 @@ It is often useful to have an explicit name for the definitions, for example, to
 theorem zero_def : (0 : GaussInt) = ⟨0, 0⟩ :=
   rfl
 
+
 theorem one_def : (1 : GaussInt) = ⟨1, 0⟩ :=
   rfl
 
@@ -60,6 +61,19 @@ theorem zero_re : (0 : GaussInt).re = 0 :=
 @[simp]
 theorem zero_im : (0 : GaussInt).im = 0 :=
   rfl
+
+
+#check propext
+theorem zero_def' (z : GaussInt): (z = 0) = ((z.re = 0) ∧ (z.im = 0)) := by
+ ext
+ constructor
+ . intro h
+   rw [h]
+   simp
+ . rintro ⟨re0,im0⟩
+   rw [zero_def]
+   ext <;> simp [re0,im0]
+
 
 @[simp]
 theorem one_re : (1 : GaussInt).re = 1 :=
@@ -172,14 +186,35 @@ theorem sub_re (x y : GaussInt) : (x - y).re = x.re - y.re :=
 @[simp]
 theorem sub_im (x y : GaussInt) : (x - y).im = x.im - y.im :=
   rfl
+/-
+Lean’s library defines the class of nontrivial types to be types with at least two distinct elements.
 
+In the context of a ring, this is equivalent to saying that the zero is not equal to the one.
+
+Since some common theorems depend on that fact, we may as well establish it now.
+-/
 instance : Nontrivial GaussInt := by
   use 0, 1
   rw [Ne, GaussInt.ext_iff]
   simp
 
 end GaussInt
+/-
+We will now show that the Gaussian integers have an important additional property. A Euclidean domain is a ring
+(R,+,*,-,1,0) equipped with a norm function N:R→ℕ with the following two properties:
 
+For every a and b ≠ 0 in R, a = bq + r with r = 0 or N(r) < N(b)
+
+For every a and b ≠ 0 in R, N(a) ≤ N(ab)
+
+
+The ring of integers ℤ with N = | | is an archetypal example of a Euclidean domain.
+
+In that case, we can take q to be the result of integer division of a by b, and
+r to be the remainder.
+
+These functions are defined in Lean so that the satisfy the following:
+-/
 example (a b : ℤ) : a = b * (a / b) + a % b :=
   Eq.symm (Int.ediv_add_emod a b)
 
@@ -217,6 +252,7 @@ end Int
 #check sq_nonneg
 #check add_lt_add_of_lt_of_le
 #check lt_irrefl
+
 theorem sq_add_sq_eq_zero {α : Type*} [LinearOrderedRing α] (x y : α) :
     x ^ 2 + y ^ 2 = 0 ↔ x = 0 ∧ y = 0 := by
   constructor
@@ -248,13 +284,38 @@ namespace GaussInt
 def norm (x : GaussInt) :=
   x.re ^ 2 + x.im ^ 2
 
+#check sq_nonneg
+#check add_nonneg
+
 @[simp]
 theorem norm_nonneg (x : GaussInt) : 0 ≤ norm x := by
-  sorry
+  rw [norm]
+  by_cases hx0: x = 0
+  . rw [hx0]
+    simp
+  . apply add_nonneg <;> exact sq_nonneg _
+
 theorem norm_eq_zero (x : GaussInt) : norm x = 0 ↔ x = 0 := by
-  sorry
+  rw [norm,zero_def']
+  exact sq_add_sq_eq_zero (α := ℤ) x.re x.im
+
+#check le_antisymm
+
 theorem norm_pos (x : GaussInt) : 0 < norm x ↔ x ≠ 0 := by
-  sorry
+  rw [norm,Ne,zero_def']
+  constructor
+  . intro lt0
+    have := Ne.symm (ne_of_lt lt0)
+    by_contra hc
+    rw [Ne] at this
+    exact this ((sq_add_sq_eq_zero (α := ℤ) x.re x.im).mpr hc)
+  . intro h
+    by_contra! hc
+    have := add_nonneg (sq_nonneg x.re) (sq_nonneg x.im)
+    have := le_antisymm this hc
+    have := ((sq_add_sq_eq_zero (α := ℤ) x.re x.im).mp this.symm)
+    exact h this
+
 theorem norm_mul (x y : GaussInt) : norm (x * y) = norm x * norm y := by
   sorry
 def conj (x : GaussInt) : GaussInt :=
