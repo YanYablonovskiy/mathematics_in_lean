@@ -426,14 +426,24 @@ class OrderedCommMonoid₁ (α : Type) extends PartialOrder₁ α, Monoid α whe
 
 
 
-instance : OrderedCommMonoid₁ ℕ where 
+instance : OrderedCommMonoid₁ ℕ where
 le := Nat.le
 refl := Nat.le_refl
 trans := by intro a b c h1 h2; simp_all; exact Nat.le_trans h1 h2
 irrefl := by intro a b h1 h2; simp_all; exact Nat.le_antisymm h1 h2
 mul_le_of_le := by intro a b h1 c; simp_all;exact Nat.mul_le_mul_left c h1
 
+/-
+We now want to discuss algebraic structures involving several types.
 
+The prime example is modules over rings.
+
+If you don’t know what is a module, you can pretend it means vector space and think that all our rings are fields.
+
+Those structures are commutative additive groups equipped with a scalar multiplication by elements of some ring.
+
+We first define the data-carrying type class of scalar multiplication by some type α on some type β, and give it a right associative notation.
+-/
 class SMul₃ (α : Type) (β : Type) where
   /-- Scalar multiplication -/
   smul : α → β → β
@@ -448,6 +458,35 @@ class Module₁ (R : Type) [Ring₃ R] (M : Type) [AddCommGroup₃ M] extends SM
   add_smul : ∀ (a b : R) (m : M), (a + b) • m = a • m + b • m
   smul_add : ∀ (a : R) (m n : M), a • (m + n) = a • m + a • n
 
+/-
+There is something interesting going on here. While it isn’t too surprising that the ring structure on R is a parameter in this definition,
+you probably expected AddCommGroup₃ M to be part of the extends clause just as SMul₃ R M is.
+
+Trying to do that would lead to a mysterious sounding error message: cannot find synthesization order for instance Module₁.toAddCommGroup₃
+with type (R : Type) → [inst : Ring₃ R] → {M : Type} → [self : Module₁ R M] → AddCommGroup₃ M all remaining arguments have
+metavariables: Ring₃ ?R @Module₁ ?R ?inst✝ M.
+
+In order to understand this message, you need to remember that such an extends clause would lead to a field Module₃.toAddCommGroup₃ marked as an instance.
+
+This instance would have the signature appearing in the error message: (R : Type) → [inst : Ring₃ R] → {M : Type} → [self : Module₁ R M] → AddCommGroup₃ M.
+
+With such an instance in the type class database, each time Lean would look for a AddCommGroup₃ M instance for some M,
+it would need to go hunting for a completely unspecified type R and a Ring₃ R instance before embarking on the main quest of finding a Module₁ R M instance.
+
+Those two side-quests are represented by the meta-variables mentioned in the error message and denoted by ?R and ?inst✝ there.
+
+Such a Module₃.toAddCommGroup₃ instance would then be a huge trap for the instance resolution procedure and then class command refuses to set it up.
+
+What about extends SMul₃ R M then? That one creates a field Module₁.toSMul₃ : {R : Type} →  [inst : Ring₃ R] → {M : Type} → [inst_1 : AddCommGroup₃ M] → [self : Module₁ R M] → SMul₃ R M whose end result SMul₃ R M mentions both R and M so this field can safely be used as an instance.
+
+
+The rule is easy to remember: each class appearing in the extends clause should mention every type appearing in the parameters.
+
+Let us create our first module instance: a ring is a module over itself using its multiplication as a scalar multiplication.
+-/
+
+
+
 instance selfModule (R : Type) [Ring₃ R] : Module₁ R R where
   smul := fun r s ↦ r*s
   zero_smul := zero_mul
@@ -455,7 +494,13 @@ instance selfModule (R : Type) [Ring₃ R] : Module₁ R R where
   mul_smul := mul_assoc₃
   add_smul := Ring₃.right_distrib
   smul_add := Ring₃.left_distrib
+/-
+As a second example, every abelian group is a module over ℤ (this is one of the reason to generalize the theory of vector spaces by allowing non-invertible scalars).
 
+First one can define scalar multiplication by a natural number for any type equipped with a zero and an addition: n • a is defined as a + ⋯ + a where a appears n times.
+
+Then this is extended to scalar multiplication by an integer by ensuring (-1) • a = -a.
+-/
 def nsmul₁ [Zero M] [Add M] : ℕ → M → M
   | 0, _ => 0
   | n + 1, a => a + nsmul₁ n a
@@ -463,7 +508,13 @@ def nsmul₁ [Zero M] [Add M] : ℕ → M → M
 def zsmul₁ {M : Type*} [Zero M] [Add M] [Neg M] : ℤ → M → M
   | Int.ofNat n, a => nsmul₁ n a
   | Int.negSucc n, a => -nsmul₁ n.succ a
+/-
+Proving this gives rise to a module structure is a bit tedious and not interesting for the current discussion, so we will sorry all axioms.
 
+You are not asked to replace those sorries with proofs.
+
+If you insist on doing it then you will probably want to state and prove several intermediate lemmas about nsmul₁ and zsmul₁.
+-/
 instance abGrpModule (A : Type) [AddCommGroup₃ A] : Module₁ ℤ A where
   smul := zsmul₁
   zero_smul := sorry
@@ -471,10 +522,52 @@ instance abGrpModule (A : Type) [AddCommGroup₃ A] : Module₁ ℤ A where
   mul_smul := sorry
   add_smul := sorry
   smul_add := sorry
+/-
+A much more important issue is that we now have two module structures over the ring ℤ for ℤ itself: abGrpModule ℤ since ℤ is a abelian group,
+and selfModule ℤ since ℤ is a ring.
+
+Those two module structure correspond to the same abelian group structure, but it is not obvious that they have the same scalar multiplication.
+
+They actually do, but this isn’t true by definition, it requires a proof.
+
+This is very bad news for the type class instance resolution procedure and will lead to very frustrating failures for users of this hierarchy.
+
+When directly asked to find an instance, Lean will pick one, and we can see which one using:
+-/
 
 #synth Module₁ ℤ ℤ -- abGrpModule ℤ
 
+/-
+But in a more indirect context it can happen that Lean infers the other one and then gets confused.
 
+This situation is known as a bad diamond.
+
+This has nothing to do with the diamond operation we used above, it refers to the way one can draw the paths from ℤ to its Module₁ ℤ going through either AddCommGroup₃ ℤ or Ring₃ ℤ.
+
+It is important to understand that not all diamonds are bad.
+
+In fact there are diamonds everywhere in Mathlib, and also in this chapter.
+
+Already at the very beginning we saw one can go from Monoid₁ α to Dia₁ α through either Semigroup₁ α or DiaOneClass₁ α and thanks to the work done by the class command,
+the resulting two Dia₁ α instances are definitionally equal.
+
+In particular a diamond having a Prop-valued class at the bottom cannot be bad since any two proofs of the same statement are definitionally equal.
+
+But the diamond we created with modules is definitely bad.
+
+The offending piece is the smul field which is data, not a proof, and we have two constructions that are not definitionally equal.
+
+The robust way of fixing this issue is to make sure that going from a rich structure to a poor structure is always done by forgetting data, not by defining data.
+
+This well-known pattern has been named “forgetful inheritance” and extensively discussed in https://inria.hal.science/hal-02463336v2.
+
+In our concrete case, we can modify the definition of AddMonoid₃ to include a nsmul data field and some Prop-valued fields ensuring
+this operation is provably the one we constructed above.
+
+hose fields are given default values using := after their type in the definition below.
+
+Thanks to these default values, most instances would be constructed exactly as with our previous definitions. But in the special case of ℤ we will be able to provide specific values.
+-/
 class AddMonoid₄ (M : Type) extends AddSemigroup₃ M, AddZeroClass M where
   /-- Multiplication by a natural number. -/
   nsmul : ℕ → M → M := nsmul₁
@@ -484,14 +577,20 @@ class AddMonoid₄ (M : Type) extends AddSemigroup₃ M, AddZeroClass M where
   nsmul_succ : ∀ (n : ℕ) (x), nsmul (n + 1) x = x + nsmul n x := by intros; rfl
 
 instance mySMul {M : Type} [AddMonoid₄ M] : SMul ℕ M := ⟨AddMonoid₄.nsmul⟩
-
+/-
+Let us check we can still construct a product monoid instance without providing the nsmul related fields.
+-/
 instance (M N : Type) [AddMonoid₄ M] [AddMonoid₄ N] : AddMonoid₄ (M × N) where
   add := fun p q ↦ (p.1 + q.1, p.2 + q.2)
   add_assoc₃ := fun a b c ↦ by ext <;> apply add_assoc₃
   zero := (0, 0)
   zero_add := fun a ↦ by ext <;> apply zero_add
   add_zero := fun a ↦ by ext <;> apply add_zero
+/-
+And now let us handle the special case of ℤ where we want to build nsmul using the coercion of ℕ to ℤ and the multiplication on ℤ.
 
+Note in particular how the proof fields contain more work than in the default value above.
+-/
 instance : AddMonoid₄ ℤ where
   add := (· + ·)
   add_assoc₃ := Int.add_assoc
@@ -502,5 +601,18 @@ instance : AddMonoid₄ ℤ where
   nsmul_zero := Int.zero_mul
   nsmul_succ := fun n m ↦ show (n + 1 : ℤ) * m = m + n * m
     by rw [Int.add_mul, Int.add_comm, Int.one_mul]
+/-
+Let us check we solved our issue.
 
+Because Lean already has a definition of scalar multiplication of a natural number and an integer, and we want to make sure our instance is used,
+we won’t use the • notation but call SMul.mul and explicitly provide our instance defined above.
+-/
 example (n : ℕ) (m : ℤ) : SMul.smul (self := mySMul) n m = n * m := rfl
+/-
+This story then continues with incorporating a zsmul field into the definition of groups and similar tricks. You are now ready to read the definition of monoids, groups, rings and modules in Mathlib.
+
+There are more complicated than what we have seen here, because they are part of a huge hierarchy, but all principles have been explained above.
+
+As an exercise, you can come back to the order relation hierarchy you built above and try to incorporate a type class LT₁ carrying the Less-Than notation <₁
+and make sure that every preorder comes with a <₁ which has a default value built from ≤₁ and a Prop-valued field asserting the natural relation between those two comparison operat
+-/
