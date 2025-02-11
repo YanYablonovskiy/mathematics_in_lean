@@ -237,14 +237,30 @@ lemma dia_inv [Group₁ G] (a : G) : a ⋄ a⁻¹ = 𝟙 := by
   . exact inv_dia a
  rw [this]
 
+/-
+At this stage we would like to move on to define rings, but there is a serious issue.
 
+A ring structure on a type contains both an additive group structure and a multiplicative monoid structure, and some properties about their interaction.
 
+But so far we hard-coded a notation ⋄ for all our operations.
 
+More fundamentally, the type class system assumes every type has only one instance of each type class.
 
+There are various ways to solve this issue.
 
+Surprisingly Mathlib uses the naive idea to duplicate everything for additive and multiplicative theories with the help of some code-generating attribute.
 
+Structures and classes are defined in both additive and multiplicative notation with an attribute to_additive linking them.
 
+In case of multiple inheritance like for semi-groups, the auto-generated “symmetry-restoring” instances need also to be marked.
 
+This is a bit technical; you don’t need to understand details.
+
+The important point is that lemmas are then only stated in multiplicative notation and marked with the attribute to_additive
+to generate the additive version as left_inv_eq_right_inv' with its auto-generated additive version left_neg_eq_right_neg'.
+
+In order to check the name of this additive version we used the whatsnew in command on top of left_inv_eq_right_inv'.
+-/
 
 class AddSemigroup₃ (α : Type) extends Add α where
 /-- Addition is associative -/
@@ -297,27 +313,49 @@ attribute [simp] Group₃.inv_mul AddGroup₃.neg_add
 
 
 @[to_additive]
-lemma inv_eq_of_mul [Group₃ G] {a b : G} (h : a * b = 1) : a⁻¹ = b :=
-  sorry
+lemma inv_eq_of_mul [Group₃ G] {a b : G} (h : a * b = 1) : a⁻¹ = b := by
+ rw [←mul_one a⁻¹]
+ rw [←h]
+ rw [←Group₃.toMonoid₃.mul_assoc₃]
+ simp
 
 
 @[to_additive (attr := simp)]
 lemma Group₃.mul_inv {G : Type} [Group₃ G] {a : G} : a * a⁻¹ = 1 := by
-  sorry
+  have: a⁻¹⁻¹ = a := by
+   apply inv_eq_of_mul
+   . simp
+  nth_rewrite 1 [←this]
+  simp
 
 @[to_additive]
 lemma mul_left_cancel₃ {G : Type} [Group₃ G] {a b c : G} (h : a * b = a * c) : b = c := by
-  sorry
+  rw [ ←Group₃.toMonoid₃.one_mul b,←Group₃.inv_mul (a:=a)]
+  rw [Group₃.toMonoid₃.mul_assoc₃]
+  rw [h]
+  rw [←Group₃.toMonoid₃.mul_assoc₃]
+  simp
 
 @[to_additive]
 lemma mul_right_cancel₃ {G : Type} [Group₃ G] {a b c : G} (h : b*a = c*a) : b = c := by
-  sorry
+  rw [ ←Group₃.toMonoid₃.mul_one b,←Group₃.mul_inv (a:=a)]
+  rw [ ←Group₃.toMonoid₃.mul_assoc₃]
+  rw [h,Group₃.toMonoid₃.mul_assoc₃,Group₃.mul_inv]
+  simp
 
 class AddCommGroup₃ (G : Type) extends AddGroup₃ G, AddCommMonoid₃ G
 
 @[to_additive AddCommGroup₃]
 class CommGroup₃ (G : Type) extends Group₃ G, CommMonoid₃ G
+/-
+We are now ready for rings. For demonstration purposes we won’t assume that addition is commutative, and then immediately provide an instance of AddCommGroup₃.
 
+Mathlib does not play this game, first because in practice this does not make any ring instance easier and also because Mathlib’s
+algebraic hierarchy goes through semirings which are like rings but without opposites so that the proof below does not work for them.
+
+What we gain here, besides a nice exercise if you have never seen it, is an example of building an instance
+using the syntax that allows to provide a parent structure and some extra fields.
+-/
 
 
 class Ring₃ (R : Type) extends AddGroup₃ R, Monoid₃ R, MulZeroClass R where
@@ -326,10 +364,23 @@ class Ring₃ (R : Type) extends AddGroup₃ R, Monoid₃ R, MulZeroClass R wher
   /-- Multiplication is right distributive over addition -/
   right_distrib : ∀ a b c : R, (a + b) * c = a * c + b * c
 
+
+
 instance {R : Type} [Ring₃ R] : AddCommGroup₃ R :=
 { Ring₃.toAddGroup₃ with
   add_comm := by
-    sorry }
+    intro a b
+    have : a + (a + b + b) = a + (b + a + b) := calc
+      a + (a + b + b) = a + a + b + b := by rw [←add_assoc₃,←add_assoc₃]
+      _ = (a+a) + (b+b) := by simp [add_assoc₃]
+      _ = (1*a + 1*a) + (1*b + 1*b) := by simp
+      _ = (1 + 1)*a + (1+1)*b := by rw [←Ring₃.right_distrib,←Ring₃.right_distrib]
+      _ = (1+1)*(a+b) := by rw [←Ring₃.left_distrib]
+      _ = 1*(a+b) + 1*(a+b) := by rw [Ring₃.right_distrib 1 1 (a+b)]
+      _ = (a+b) + (a+b) := by simp
+      _ = a + (b + a + b) := by simp [add_assoc₃]
+    exact add_right_cancel₃ (add_left_cancel₃ this) }
+
 
 instance : Ring₃ ℤ where
   add := (· + ·)
@@ -349,15 +400,26 @@ instance : Ring₃ ℤ where
   left_distrib := Int.mul_add
   right_distrib := Int.add_mul
 
+
+/-
+As an exercise you can now set up a simple hierarchy for order relations, including a class for ordered commutative monoids,
+which have both a partial order and a commutative monoid structure such that ∀ a b : α, a ≤ b → ∀ c : α, c * a ≤ c * b.
+
+Of course you need to add fields and maybe extends clauses to the following classes.
+
+-/
 class LE₁ (α : Type) where
   /-- The Less-or-Equal relation. -/
   le : α → α → Prop
 
 @[inherit_doc] infix:50 " ≤₁ " => LE₁.le
 
-class Preorder₁ (α : Type)
+class Preorder₁ (α : Type) extends LE₁ α where
+ refl: ∀(a b:α),le a b → le b a
+ trans: ∀(a b c:α), le a b → le b c → le a c
 
-class PartialOrder₁ (α : Type)
+class PartialOrder₁ (α : Type) extends Preorder₁ α where
+ irrefl: ∀(a b:α), le a b → le b a → (a = b)
 
 class OrderedCommMonoid₁ (α : Type)
 
