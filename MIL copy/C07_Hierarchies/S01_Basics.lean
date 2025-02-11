@@ -415,15 +415,24 @@ class LE₁ (α : Type) where
 @[inherit_doc] infix:50 " ≤₁ " => LE₁.le
 
 class Preorder₁ (α : Type) extends LE₁ α where
- refl: ∀(a b:α),le a b → le b a
+ refl: ∀(a: α),le a a
  trans: ∀(a b c:α), le a b → le b c → le a c
 
 class PartialOrder₁ (α : Type) extends Preorder₁ α where
  irrefl: ∀(a b:α), le a b → le b a → (a = b)
 
-class OrderedCommMonoid₁ (α : Type)
+class OrderedCommMonoid₁ (α : Type) extends PartialOrder₁ α, Monoid α where
+ mul_le_of_le: ∀(a b:α), le a b → ∀(c:α),le (c * a) (c * b)
 
-instance : OrderedCommMonoid₁ ℕ where
+
+
+instance : OrderedCommMonoid₁ ℕ where 
+le := Nat.le
+refl := Nat.le_refl
+trans := by intro a b c h1 h2; simp_all; exact Nat.le_trans h1 h2
+irrefl := by intro a b h1 h2; simp_all; exact Nat.le_antisymm h1 h2
+mul_le_of_le := by intro a b h1 c; simp_all;exact Nat.mul_le_mul_left c h1
+
 
 class SMul₃ (α : Type) (β : Type) where
   /-- Scalar multiplication -/
