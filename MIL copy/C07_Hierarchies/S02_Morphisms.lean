@@ -184,11 +184,28 @@ def badInst [Monoid M] [Monoid N] [MonoidHomClass₁ F M N] : CoeFun F (fun _ �
   coe := MonoidHomClass₁.toFun
 
 /-
+Making this an instance would be bad. When faced with something like f x where the type of f is not a function type,
+Lean will try to find a CoeFun instance to coerce f into a function.
 
+The above function has type: {M N F : Type} → [Monoid M] → [Monoid N] → [MonoidHomClass₁ F M N] → CoeFun F (fun x ↦ M → N) so,
+when it trying to apply it, it wouldn’t be a priori clear to Lean in which order the unknown types M, N and F should be inferred.
+
+This is a kind of bad instance that is slightly different from the one we saw already, but it boils down to the same issue: without knowing M,
+Lean would have to search for a monoid instance on an unknown type, hence hopelessly try every monoid instance in the database.
+
+If you are curious to see the effect of such an instance you can type set_option synthInstance.checkSynthOrder false in on top of the above declaration,
+replace def badInst with instance, and look for random failures in this file.
+
+Here the solution is easy, we need to tell Lean to first search what is F and then deduce M and N.
+
+This is done using the outParam function. This function is defined as the identity function, but is still recognized by the type class machinery and
+triggers the desired behavior.
+
+Hence we can retry defining our class, paying attention to the outParam function:
 -/
 
 class MonoidHomClass₂ (F : Type) (M N : outParam Type) [Monoid M] [Monoid N] where
-  toFun : F → M → N
+  toFun : F → M → N --the fun in question
   map_one : ∀ f : F, toFun f 1 = 1
   map_mul : ∀ f g g', toFun f (g * g') = toFun f g * toFun f g'
 
@@ -197,12 +214,17 @@ instance [Monoid M] [Monoid N] [MonoidHomClass₂ F M N] : CoeFun F (fun _ ↦ M
 
 attribute [coe] MonoidHomClass₂.toFun
 
+/-
+Now we can proceed with our plan to instantiate this class.
+-/
 
 instance (M N : Type) [Monoid M] [Monoid N] : MonoidHomClass₂ (MonoidHom₁ M N) M N where
   toFun := MonoidHom₁.toFun
   map_one := fun f ↦ f.map_one
   map_mul := fun f ↦ f.map_mul
 
+
+--instance of monoid hom class for rings
 instance (R S : Type) [Ring R] [Ring S] : MonoidHomClass₂ (RingHom₁ R S) R S where
   toFun := fun f ↦ f.toMonoidHom₁.toFun
   map_one := fun f ↦ f.toMonoidHom₁.map_one
@@ -213,12 +235,30 @@ lemma map_inv_of_inv [Monoid M] [Monoid N] [MonoidHomClass₂ F M N] (f : F) {m 
     f m * f m' = 1 := by
   rw [← MonoidHomClass₂.map_mul, h, MonoidHomClass₂.map_one]
 
+
+--proof works for both just monoids and rings
 example [Monoid M] [Monoid N] (f : MonoidHom₁ M N) {m m' : M} (h : m*m' = 1) : f m * f m' = 1 :=
 map_inv_of_inv f h
 
 example [Ring R] [Ring S] (f : RingHom₁ R S) {r r' : R} (h : r*r' = 1) : f r * f r' = 1 :=
 map_inv_of_inv f h
+/-
+At first sight, it may look like we got back to our old bad idea of making MonoidHom₁ a class.
 
+But we haven’t.
+
+Everything is shifted one level of abstraction up.
+
+The type class resolution procedure won’t be looking for functions, it will be looking for either MonoidHom₁ or RingHom₁.
+
+One remaining issue with our approach is the presence of repetitive code around the toFun field and the corresponding CoeFun instance and coe attribute.
+
+It would also be better to record that this pattern is used only for functions with extra properties, meaning that the coercion to functions should be injective.
+
+So Mathlib adds one more layer of abstraction with the base class DFunLike (where “DFun” stands for dependent function).
+
+Let us redefine our MonoidHomClass on top of this base layer.
+-/
 
 
 class MonoidHomClass₃ (F : Type) (M N : outParam Type) [Monoid M] [Monoid N] extends
@@ -231,7 +271,23 @@ instance (M N : Type) [Monoid M] [Monoid N] : MonoidHomClass₃ (MonoidHom₁ M 
   coe_injective' _ _ := MonoidHom₁.ext
   map_one := MonoidHom₁.map_one
   map_mul := MonoidHom₁.map_mul
+/-
+Of course the hierarchy of morphisms does not stop here.
 
+We could go on and define a class RingHomClass₃ extending MonoidHomClass₃ and instantiate it on RingHom and then later on AlgebraHom
+(algebras are rings with some extra structure).
+
+But we’ve covered the main formalization ideas used in Mathlib for morphisms and you should be ready to understand how morphisms are defined in Mathlib.
+
+As an exercise, you should try to define your class of bundled order-preserving function between ordered types, and then order preserving monoid morphisms.
+
+This is for training purposes only.
+
+Like continuous functions, order preserving functions are primarily unbundled in Mathlib
+where they are defined by the Monotone predicate.
+
+Of course you need to complete the class definitions below.
+-/
 
 @[ext]
 structure OrderPresHom (α β : Type) [LE α] [LE β] where
@@ -242,13 +298,24 @@ structure OrderPresHom (α β : Type) [LE α] [LE β] where
 structure OrderPresMonoidHom (M N : Type) [Monoid M] [LE M] [Monoid N] [LE N] extends
 MonoidHom₁ M N, OrderPresHom M N
 
-class OrderPresHomClass (F : Type) (α β : outParam Type) [LE α] [LE β]
+
+class OrderPresHomClass (F : Type) (α β : outParam Type) [LE α] [LE β] where
+toFun: F → α → β
+le_of_le : ∀(f:F),∀(a a':α), a ≤ a' → (toFun f) a ≤ (toFun f) a'
+
 
 instance (α β : Type) [LE α] [LE β] : OrderPresHomClass (OrderPresHom α β) α β where
+toFun := fun f ↦ f.toFun
+le_of_le := fun f ↦ f.le_of_le
 
 instance (α β : Type) [LE α] [Monoid α] [LE β] [Monoid β] :
     OrderPresHomClass (OrderPresMonoidHom α β) α β where
+toFun := fun f ↦ f.toOrderPresHom.toFun
+le_of_le := fun f ↦ f.toOrderPresHom.le_of_le
 
 instance (α β : Type) [LE α] [Monoid α] [LE β] [Monoid β] :
-    MonoidHomClass₃ (OrderPresMonoidHom α β) α β
-  := sorry
+    MonoidHomClass₃ (OrderPresMonoidHom α β) α β where
+  coe := fun f ↦ f.toOrderPresHom.toFun
+  coe_injective' _ _ := OrderPresMonoidHom.ext
+  map_one := fun f ↦ f.toMonoidHom₁.map_one
+  map_mul := fun f ↦ f.toMonoidHom₁.map_mul
