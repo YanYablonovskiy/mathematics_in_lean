@@ -152,7 +152,7 @@ theorem sb_surjective (hg : Injective g) : Surjective (sbFun f g) := by
       rw [A_def, sbSet, mem_iUnion]
       exact ⟨n, xmem⟩
     simp only [h_def, sbFun, if_pos this]
-    exact hg hx
+    exact hg (by rw [←A_def]; simp [this]; exact hx)
   have := sb_right_inv (β:=β) f g gyA
   have := hg this
   use g y
