@@ -88,6 +88,34 @@ example {m n : ℕ} (coprime_mn : m.Coprime n) : m ^ 2 ≠ 2 * n ^ 2 := by
     exact t5
   norm_num at this
 
+--RELATIVELY GOLFED
+example {m n : ℕ} (coprime_mn : m.Coprime n) : m ^ 2 ≠ 2 * n ^ 2 := by
+  intro sqr_eq
+  rw [pow_two] at sqr_eq
+  have t4: 2 ∣ m := by
+     have: (2 ∣ m) ∨ (2 ∣ m) := (Nat.Prime.dvd_mul Nat.prime_two).mp (by use n^2);tauto
+  obtain ⟨k, meq⟩ := dvd_iff_exists_eq_mul_left.mp t4--obtaining m = 2*k
+  have: 2 * (2 * k ^ 2) = 2 * n ^ 2 := by simp_rw [← sqr_eq,meq];ring
+  have: 2 * k ^ 2 = n ^ 2 := Nat.mul_left_cancel (two_pos) this
+  have t3: 2 ∣ n := by
+    have := (Nat.Prime.dvd_mul (m:=n) (n:=n) Nat.prime_two).mp (by simp_rw [←pow_two,←this];use k^2);tauto
+  have t5: 2 ∣ m.gcd n := by
+    rw [←gcd_eq_nat_gcd]
+    have := gcd_dvd_gcd t4 t3
+    rw [gcd_eq_nat_gcd,Nat.gcd_self] at this
+    exact this
+  have : 2 ∣ 1 := by
+    have := Nat.coprime_iff_gcd_eq_one.mp coprime_mn
+    rw [this] at t5
+    exact t5
+  norm_num at this
+
+
+
+
+
+
+
 #check lt_of_le_of_lt'
 example {m n p : ℕ} (coprime_mn : m.Coprime n) (prime_p : p.Prime) : m ^ 2 ≠ p * n ^ 2 := by
   intro meq
