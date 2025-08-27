@@ -138,16 +138,21 @@ example (hfa : FnUb f a) (hgb : FnUb g b) (nng : FnLb g 0) (nna : 0 ≤ a) :
 end
 
 section
-variable {α : Type*} {R : Type*} [OrderedCancelAddCommMonoid R]
+variable {α : Type*} {R : Type*} [Preorder R] [AddCommMonoid R] [ma:AddLeftMono R] [AddRightMono R] --[OrderedCancelAddCommMonoid R]
 
 #check add_le_add
 
 def FnUb' (f : α → R) (a : R) : Prop :=
   ∀ x, f x ≤ a
 
+#check add_le_add
+
 theorem fnUb_add {f g : α → R} {a b : R} (hfa : FnUb' f a) (hgb : FnUb' g b) :
     FnUb' (fun x ↦ f x + g x) (a + b) := fun x ↦ add_le_add (hfa x) (hgb x)
-
+    --  rw [FnUb'] at *;intro x
+    --  specialize hfa x
+    --  specialize hgb x
+    --  apply add_le_add hfa hgb
 end
 
 example (f : ℝ → ℝ) (h : Monotone f) : ∀ {a b}, a ≤ b → f a ≤ f b :=

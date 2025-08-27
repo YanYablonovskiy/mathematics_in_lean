@@ -113,7 +113,7 @@ theorem primes_infinite : ∀ n, ∃ p > n, Nat.Prime p := by
       . exact (Nat.Prime.pos pp)
       . linarith
     have : p ∣ 1 := by
-      have t1: 1 = (Nat.factorial (n + 1) + 1) - Nat.factorial (n + 1) := by simp_arith
+      have t1: 1 = (Nat.factorial (n + 1) + 1) - Nat.factorial (n + 1) := by simp +arith
       rw [t1]
       apply Nat.dvd_sub'
       . exact pdvd
@@ -276,7 +276,7 @@ theorem primes_infinite' : ∀ s : Finset Nat, ∃ p, Nat.Prime p ∧ p ∉ s :=
         intro i his
         simp [s'_def] at his
         exact Nat.Prime.one_le (his.2)
-      calc 2 ≤ 1+1 := by simp_arith
+      calc 2 ≤ 1+1 := by simp +arith
       _ ≤ (∏ i in s', i) + 1 := Nat.add_le_add h₁ (le_refl 1)
     rcases exists_prime_factor this with ⟨p, pp, pdvd⟩
     have : p ∣ ∏ i in s', i := --since p is prime, it must be in s' and hence divide the product
@@ -372,8 +372,8 @@ theorem exists_prime_factor_mod_4_eq_3 {n : Nat} (h : n % 4 = 3) :
         use m
         rw [mul_comm]
         simp [neq]
-      . simp [h1]
-    . have := ih k (by simp [k];apply Nat.div_lt_self<;>linarith) (by simp [h1]) npk
+      . simp [h1,k]
+    . have := ih k (by simp [k];apply Nat.div_lt_self<;>linarith) (by simp [h1,k]) npk
       rcases this with ⟨p,hp⟩
       use p
       constructor

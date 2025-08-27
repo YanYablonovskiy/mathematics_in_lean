@@ -62,7 +62,7 @@ example (h : ∀ a, ∃ x, f x < a) : ¬FnHasLb f := by
   rcases FnLb with ⟨b,hgb⟩
   rcases (h b) with ⟨x,flua⟩
   have fxgb:f x ≥ b := hgb x
-  apply not_le_of_gt (a:=b)
+  apply not_le_of_gt (a:=f x) (b := b)
   . exact flua
   . exact fxgb
 

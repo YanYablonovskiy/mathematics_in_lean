@@ -59,7 +59,7 @@ variable (g : β → α) (x : α)
 #check (leftInverse_invFun : Injective g → LeftInverse (invFun g) g)
 #check (leftInverse_invFun : Injective g → ∀ y, invFun g (g y) = y)
 #check (invFun_eq : (∃ y, g y = x) → g (invFun g x) = x)
-#check ( _root_.RightInverse)
+
 #print RightInverse
 end
 #check dif_pos
@@ -151,8 +151,7 @@ theorem sb_surjective (hg : Injective g) : Surjective (sbFun f g) := by
     have : x ∈ A := by
       rw [A_def, sbSet, mem_iUnion]
       exact ⟨n, xmem⟩
-    simp only [h_def, sbFun, if_pos this]
-    exact hg hx
+    simp only [h_def, sbFun, if_pos this,hg hx,xmem,A]
   have := sb_right_inv (β:=β) f g gyA
   have := hg this
   use g y

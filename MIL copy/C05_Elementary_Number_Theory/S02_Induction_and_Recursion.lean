@@ -143,6 +143,8 @@ variable {α : Type*} (s : Finset ℕ) (f : ℕ → ℕ) (n : ℕ)
 open BigOperators
 open Finset
 
+
+
 example : s.sum f = ∑ x in s, f x :=
   rfl
 
@@ -212,7 +214,7 @@ induction' n with j ih
   simp [mul_add,add_mul,←pow_two]
   ring_nf
   rw [←add_comm ((j + j ^ 2 * 3 + j ^ 3 * 2) / 6)]
-  have: (6 + j * 13 + j ^ 2 * 9 + j ^ 3 * 2) = (6*(1+j*2 + j ^ 2) + (j + j^2*3 + (j^ 3)*2)) := by simp_arith
+  have: (6 + j * 13 + j ^ 2 * 9 + j ^ 3 * 2) = (6*(1+j*2 + j ^ 2) + (j + j^2*3 + (j^ 3)*2)) := by simp +arith
   rw [this]
   rw [Nat.add_div_of_dvd_right (a:=6 * (1 + j * 2 + j ^ 2))]
   rw [add_comm]
@@ -302,8 +304,8 @@ theorem succ_mul (m n : MyNat) : mul (succ m) n = add (mul m n) n := by
       simp [succ_add]
       rw [add_comm _ s.succ]
       simp [succ_add,mul,add_assoc]
-   
-    
+
+
 theorem mul_comm (m n : MyNat) : mul m n = mul n m := by
   induction' n with j ih
   . simp [mul,zero_mul]

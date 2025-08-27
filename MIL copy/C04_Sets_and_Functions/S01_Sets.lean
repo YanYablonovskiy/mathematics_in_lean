@@ -258,7 +258,7 @@ example : { n | Nat.Prime n } ∩ { n | n > 2 } ⊆ { n | ¬Even n } := by
   rcases this with ⟨w,hw⟩
   rw [←mul_two,mul_comm] at hw
   rcases h1  with ⟨nu,h⟩
-  have := (h 2 w) hw
+  have := (@h 2 w) hw
   rcases this with h | h
   . contradiction
   . rw [isUnit_iff_eq_one.mp h,mul_one] at hw
